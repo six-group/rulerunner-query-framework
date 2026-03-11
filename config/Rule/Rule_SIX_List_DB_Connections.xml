@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_list_db_connections">
+	<Description>List DB connections</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="threshold" type="int">
+				<Description>Have the rule return true if more than this number of connections are active</Description>
+				<Prompt>Threshold</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import com.six.iam.util.OrionQL;
+import com.six.iam.util.TabularData;
+import sailpoint.server.Environment;
+
+var hostname = System.getProperty("host.name");
+if (hostname != null)
+{
+    rulerunnerOutput.printNoEscape("<h2>");
+    rulerunnerOutput.print(hostname);
+    rulerunnerOutput.printNoEscape("</h2>\n");
+}
+
+var writer = new TabularData(List.of(
+    "key",
+    "created=:link(#,${created},${stack:join})",
+    "thread=^.threads:get(threadName):link(rulerunner.jsf?rule=six_thread_watcher&amp;title=${@.threadName}&amp;threadSelectorPatterns=${@.threadName:replace( ,\\\\\\\\s)},${@.threadName},${:join})|threadName",
+    "context"
+), false);
+writer.setOutputStream(rulerunnerOutput, "UTF-8");
+var connectionSorter = new TreeMap();
+for (var connection: Environment.getEnvironment().getSpringDataSource().getConnectionList())
+{
+    connectionSorter.put(String.format("%s_%d", connection.getCreated(), connectionSorter.size()), connection);
+}
+var connections = OrionQL.wrap(connectionSorter.values().iterator(), null);
+var threads = new HashMap();
+for (var threadEntry: Thread.getAllStackTraces().entrySet())
+{
+    threads.put(threadEntry.getKey().getName(), Arrays.asList(threadEntry.getValue()));
+}
+connections.implant("threads", threads);
+writer.writeHtmlTable(connections);
+
+rulerunnerOutput.addMessage("%d connections listed, %d active connections", writer.getRecordCount(), Environment.getEnvironment().getActiveConnections());
+return (threshold != null) && (writer.getRecordCount() > threshold);
+]]></Source>
+</Rule>

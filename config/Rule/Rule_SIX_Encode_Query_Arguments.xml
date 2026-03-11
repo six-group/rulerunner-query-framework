@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_encode_query_arguments">
+	<Description>Create proxy rules from Rule Runner URLs</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="url" type="text">
+				<Description>Paste your Rule Runner URL here</Description>
+				<Prompt>URL</Prompt>
+			</Argument>
+			<Argument name="createRuleTemplate" type="boolean">
+				<Description>If checked, a complete Proxy Rule template will be generated</Description>
+				<Prompt>Create rule template</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.regex.Pattern;
+import sailpoint.tools.xml.XMLObjectFactory;
+
+var ruleName = null;
+var title = null;
+var parser = Pattern.compile("([^=]+)=([^&]*)&?").matcher(new URL(url).getQuery());
+var xmlSerializer = XMLObjectFactory.getInstance();
+var buffer = new StringBuilder();
+while (parser.find())
+{
+    var map = new HashMap();
+    var name = URLDecoder.decode(parser.group(1), "UTF-8");
+    var value = URLDecoder.decode(parser.group(2), "UTF-8");
+    switch (name)
+    {
+    	case "rule":
+    		ruleName = value;
+    		break;
+    	case "title":
+    		title = value;
+    		// fall through
+    	default:
+			map.put(name, value);
+			buffer.append(xmlSerializer.toXml(map, false));
+			break;
+    }
+}
+var arguments = buffer.toString().replaceAll("\\n\\s*</Map>\\s*<Map>\\s*\n", "\n").replaceAll("(?m)^  ", "	");
+
+rulerunnerOutput.printNoEscape("<pre>");
+if (createRuleTemplate)
+{
+	rulerunnerOutput.print("<Rule language=\"proxy\">\n");
+	rulerunnerOutput.print("	<Description>-- put the optional description here --</Description>\n");
+	rulerunnerOutput.print("	<Signature>\n");
+	rulerunnerOutput.print("		<Inputs>\n");
+	rulerunnerOutput.print("			<Argument name=\"-- put the argument name here --\" type=\"string|text|int|boolean|date|choice:option,option,...\">\n");
+	rulerunnerOutput.print("				<Description>-- put the optional help text here --</Description>\n");
+	rulerunnerOutput.print("				<Prompt>-- put the field label here --</Prompt>\n");
+	rulerunnerOutput.print("			</Argument>\n");
+	rulerunnerOutput.print("			<!-- more arguments -->\n");
+	rulerunnerOutput.print("		</Inputs>\n");
+	rulerunnerOutput.print("	</Signature>\n");
+	rulerunnerOutput.print("	<Attributes>\n");
+	rulerunnerOutput.print("		<Map>\n");
+	rulerunnerOutput.print(String.format("			<entry key=\"title\" value=\"%s\"/>\n", (title != null) ? title : "-- put the optional title here --"));
+	rulerunnerOutput.print("			<!-- entry key=\"runImmediate\" value=\"true|false\"/-->\n");
+	rulerunnerOutput.print("			<!-- entry key=\"runInBackground\" value=\"true\"/-->\n");
+	rulerunnerOutput.print("			<entry key=\"authorizingCapabilities\" value=\"-- put the optional authorizing capabilities here --\"/>\n");
+	rulerunnerOutput.print("			<entry key=\"authorizingDynamicScopes\" value=\"-- put the optional authorizing scopes here --\"/>\n");
+	rulerunnerOutput.print(String.format("			<entry key=\"targetRuleName\" value=\"%s\"/>\n", ruleName));
+	rulerunnerOutput.print("			<entry key=\"targetRuleArguments\">\n");
+	rulerunnerOutput.print("				<value>\n");
+	rulerunnerOutput.print("					<Attributes>\n");
+	rulerunnerOutput.print(arguments.replaceAll("<", "						<"));
+	rulerunnerOutput.print("					</Attributes>\n");
+	rulerunnerOutput.print("				</value>\n");
+	rulerunnerOutput.print("			</entry>\n");
+	rulerunnerOutput.print("		</Map>\n");
+	rulerunnerOutput.print("	</Attributes>\n");
+	rulerunnerOutput.print("	<Source><![CDATA[-- put CerberusLogic code here --]" + "]></Source>\n");
+	rulerunnerOutput.print("</Rule>");
+}
+else
+{
+	rulerunnerOutput.print(arguments);
+}
+rulerunnerOutput.printNoEscape("</pre>");
+]]></Source>
+</Rule>

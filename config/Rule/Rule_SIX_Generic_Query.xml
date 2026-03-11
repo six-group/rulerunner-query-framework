@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="javanative" name="six_generic_query">
+	<Description>The Swiss Army knife of the IIQ operator</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the query executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="className" type="string">
+				<Description>Sailpoint object class to query. 'ResourceObject' requests reading data directly from endpoints, 'Expression' performs an OrionQL query and 'Rule: name' reads output from a rule.</Description>
+				<Prompt>Object class</Prompt>
+			</Argument>
+			<Argument name="filter" type="text">
+				<Description>Sailpoint filter expression template for database queries, and for expression queries an OrionQL expression. For reading data from endpoints a specification of the form application: schemaObjectType, optionally followed by application parameter overrides, one per line, as name=expression using OrionQL. For rule execution, parameter specifications, one per line, as name=expression using OrionQL.</Description>
+				<Prompt>Filter</Prompt>
+			</Argument>
+			<Argument name="ordering" type="string">
+				<Description>Comma separated list of attributes to sort the result set of database queries. Append " desc" to an attribute for reverse ordering.</Description>
+				<Prompt>Ordering</Prompt>
+			</Argument>
+			<Argument name="subquery" type="text">
+				<Description>OrionQL expression returning a child collection</Description>
+				<Prompt>Collection expression</Prompt>
+			</Argument>
+			<Argument name="computations" type="text">
+				<Description>OrionQL attribute assignment expressions and/or CerberusLogic attribute computation rules. Multiple blocks will be evaluated in separate passes.</Description>
+				<Prompt>Synthetic attributes</Prompt>
+			</Argument>
+			<Argument name="selector" type="text">
+				<Description>CerberusLogic selection rules</Description>
+				<Prompt>Selection rules</Prompt>
+			</Argument>
+			<Argument name="output" type="text">
+				<Description>Column specifications for tabular output or a single expression or formatting template for grouping objects, empty for counting objects</Description>
+				<Prompt>Output</Prompt>
+			</Argument>
+			<Argument name="grouping" type="text">
+				<Description>OrionQL expressions to group or count objects by</Description>
+				<Prompt>Grouping expressions</Prompt>
+			</Argument>
+			<Argument name="postprocessing" type="text">
+				<Description>Grouping level specific CerberusLogic rules to accept and/or transform elements</Description>
+				<Prompt>Groups postprocessing</Prompt>
+			</Argument>
+			<Argument name="layout" type="choice:,Matrix,Matrix (rotate headers),Multiple matrices,Multiple matrices (rotate headers),Multiple tables">
+				<Description>Choose the representation for the grouping result</Description>
+				<Prompt>Grouping layout</Prompt>
+			</Argument>
+			<Argument name="maxCaptions" type="int">
+				<Description>Maximum caption levels</Description>
+				<Prompt>Maximum captions</Prompt>
+			</Argument>
+			<Argument name="maxRows" type="int">
+				<Description>Maximum number of objects to process</Description>
+				<Prompt>Maximum rows</Prompt>
+			</Argument>
+			<Argument name="maxCache" type="int">
+				<Description>Free memory after processing the specified number of primary objects</Description>
+				<Prompt>Maximum cache size</Prompt>
+			</Argument>
+			<Argument name="download" type="choice:,text/html=HTML">
+				<Description>Request to receive the output as download in the indicated format</Description>
+				<Prompt>Download output as</Prompt>
+			</Argument>
+			<Argument name="runInBackground" type="boolean">
+				<Description>Enable for long-running queries to get the result sent by email</Description>
+				<Prompt>Execute in background</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source>com.six.iam.iiq.rulerunner.rules.GenericQuery</Source>
+</Rule>

@@ -1,0 +1,173 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Configuration PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Configuration name="OrionLibrary">
+	<Description>This is the global OrionQL macro library</Description>
+	<Attributes>
+		<Map>
+			<entry key="toXmlExtended" value=":format(${:toXml}${attributes:select( like( &quot;value&quot;, &quot;^&lt;\\?xml&quot; ) ):map(:format(${key} = ${value})):join(),})"/>
+			<entry key="toXmlExtended$description" value="Replacement for :toXml if attributes can contain XML"/>
+			<entry key="toString" value=":switch(class.name,Date=:format(${}),.=:join,:pprint)"/>
+			<entry key="toString$description" value="Format input intelligently depending on type"/>
+			<entry key="abbreviate3" value=":replace(([A-Za-z]{3}\)[a-z]+,$1)"/>
+			<entry key="abbreviate3$description" value="Abbreviate words and camelCase words to 3 characters"/>
+			<entry key="conditionalPrependNewlineAndIndent" value=":format(${:switch(\n=&quot;\n  &quot;,&quot; &quot;)}${:replace(\n+, $0  )})"/>
+			<entry key="conditionalPrependNewlineAndIndent$description" value="Depending on the input being single- or multiline, prepends it with a space or a newline and indents it by two spaces"/>
+			<entry key="limit16" value=":replace((.{13}\)....+,$1...)"/>
+			<entry key="limit16$description" value="Limit line length to 16 characters"/>
+			<entry key="limitWithTooltip16" value=":html(&lt;span title=$&quot;&quot;>${$limit16$}&lt;/span>)"/>
+			<entry key="limitWithTooltip16$description" value="Limit line length to 16 characters and add HTML tooltip"/>
+			<entry key="limit40" value=":replace((.{37}\)....+,$1...)"/>
+			<entry key="limit40$description" value="Limit line length to 40 characters"/>
+			<entry key="limitWithTooltip40" value=":html(&lt;span title=$&quot;&quot;>${$limit40$}&lt;/span>)"/>
+			<entry key="limitWithTooltip40$description" value="Limit line length to 40 characters and add HTML tooltip"/>
+			<entry key="limit60" value=":replace((.{57}\)....+,$1...)"/>
+			<entry key="limit60$description" value="Limit line length to 60 characters"/>
+			<entry key="limitWithTooltip60" value=":html(&lt;span title=$&quot;&quot;>${$limit60$}&lt;/span>)"/>
+			<entry key="limitWithTooltip60$description" value="Limit line length to 60 characters and add HTML tooltip"/>
+			<entry key="limit100" value=":replace((.{97}\)....+,$1...)"/>
+			<entry key="limit100$description" value="Limit line length to 0 characters"/>
+			<entry key="limitWithTooltip100" value=":html(&lt;span title=$&quot;&quot;>${$limit100$}&lt;/span>)"/>
+			<entry key="limitWithTooltip100$description" value="Limit line length to 100 characters and add HTML tooltip"/>
+			<entry key="hardWrap16" value=":replace((.{16}\)(?=.),$1\n )"/>
+			<entry key="hardWrap16$description" value="Wrap lines after 16 characters"/>
+			<entry key="hardWrap40" value=":replace((.{40}\)(?=.),$1\n )"/>
+			<entry key="hardWrap40$description" value="Wrap lines after 40 characters"/>
+			<entry key="hardWrap60" value=":replace((.{60}\)(?=.),$1\n )"/>
+			<entry key="hardWrap60$description" value="Wrap lines after 60 characters"/>
+			<entry key="hardWrap100" value=":replace((.{100}\)(?=.),$1\n )"/>
+			<entry key="hardWrap100$description" value="Wrap lines after 100 characters"/>
+			<entry key="softWrap16" value=":replace((.{16}[^\\s/?]*+\)(?=.),$1\n )"/>
+			<entry key="softWrap16$description" value="Wrap lines after 16 characters on next word boundary"/>
+			<entry key="softWrap40" value=":replace((.{40}[^\\s/?]*+\)(?=.),$1\n )"/>
+			<entry key="softWrap40$description" value="Wrap lines after 40 characters on next word boundary"/>
+			<entry key="softWrap60" value=":replace((.{60}[^\\s/?]*+\)(?=.),$1\n )"/>
+			<entry key="softWrap60$description" value="Wrap lines after 60 characters on next word boundary"/>
+			<entry key="softWrap100" value=":replace((.{100}[^\\s/?]*+\)(?=.),$1\n )"/>
+			<entry key="softWrap100$description" value="Wrap lines after 100 characters on next word boundary"/>
+			<entry key="toTimestampString" value=":format(${%yyyy-MM-dd HH:mm:ss})"/>
+			<entry key="toTimestampString$description" value="Format timestamp as yyyy-MM-dd HH:mm:ss"/>
+			<entry key="toDayString" value=":format(${%yyyy-MM-dd})"/>
+			<entry key="toDayString$description" value="Format timestamp as yyyy-MM-dd"/>
+			<entry key="toMonthString" value=":format(${%yyyy-MM})"/>
+			<entry key="toMonthString$description" value="Format timestamp as yyyy-MM"/>
+			<entry key="toYearString" value=":format(${%yyyy})"/>
+			<entry key="toYearString$description" value="Format timestamp as yyyy"/>
+			<entry key="toTimeString" value=":format(${%HH:mm:ss})"/>
+			<entry key="toTimeString$description" value="Format timestamp as HH:mm:ss"/>
+			<entry key="toMinuteString" value=":format(${%HH:mm})"/>
+			<entry key="toMinuteString$description" value="Format timestamp as HH:mm"/>
+			<entry key="toHourString" value=":format(${%HH})"/>
+			<entry key="toHourString$description" value="Format timestamp as HH"/>
+			<entry key="toDurationString" value=":format(\&#xA; ${./86400}:\&#xA; ${%HH:mm:ss,:date(1970-01-01)+.}\&#xA;)\&#xA;:match(^[0:]*(.+\)$)"/>
+			<entry key="toDurationString$description" value="Formats seconds given as input as days:hours:minutes:seconds"/>
+			<entry key="toAugmentedName" value=":format($augmentedNameFormat$)"/>
+			<entry key="toAugmentedName$description" value="Formats object using the standard formatting template $augmentedNameFormat$"/>
+			<entry key="red" value="&quot;#ef0000&quot;"/>
+			<entry key="red$description" value="Quoted HEX String encoding of red color"/>
+			<entry key="green" value="&quot;#00bf00&quot;"/>
+			<entry key="green$description" value="Quoted HEX String encoding of green color"/>
+			<entry key="yellow" value="&quot;#f0e800&quot;"/>
+			<entry key="yellow$description" value="Quoted HEX String encoding of yellow color"/>
+			<entry key="orange" value="&quot;#ffa500&quot;"/>
+			<entry key="orange$description" value="Quoted HEX String encoding of orange color"/>
+			<entry key="blue" value="&quot;#3399ff&quot;"/>
+			<entry key="blue$description" value="Quoted HEX String encoding of blue color"/>
+			<entry key="magenta" value="&quot;#ff33cc&quot;"/>
+			<entry key="magenta$description" value="Quoted HEX String encoding of magenta color"/>
+			<entry key="grey" value="&quot;#808080&quot;"/>
+			<entry key="grey$description" value="Quoted HEX String encoding of grey color"/>
+			<entry key="toStatusColor" value=":switch(Success=$green$,Error|Failed=$red$,Warning|Pending=$orange$,Terminated=$grey$)"/>
+			<entry key="toStatusColor$description" value="Returns a color encoding a status enum value as green, red etc."/>
+			<entry key="toOperationColor" value=":switch(Add=$green$,Remove=$red$,Revoke=$orange$,Retain=$grey$,Set=&quot;&quot;)"/>
+			<entry key="toOperationColor$description" value="Returns a color encoding an operation enum value as green, red etc."/>
+			<entry key="toAuditActionColor" value=":switch(add$|approved?$|assign$|enable$=$green$,cancel[ed]*$|deny$|disable$|rejected$|remove$|revoked?$=$red$,expired$|fail[ured]*$|retry$=$orange$,&quot;&quot;)"/>
+			<entry key="toAuditActionColor$description" value="Returns a color encoding an audit event action as green, red etc."/>
+			<entry key="toColoredStatus" value=":link(#,${},,${$toStatusColor$})"/>
+			<entry key="toColoredStatus$description" value="Formats status as colored text"/>
+			<entry key="toLogLevelColor" value=":switch(TRACE=$magenta$,DEBUG=$blue$,INFO=$green$,WARN=$yellow$,ERROR=$red$,FATAL=$orange$)"/>
+			<entry key="toLogLevelColor$description" value="Returns a color encoding a log level"/>
+			<entry key="toColoredLogLevel" value=":link(#,${},,${$toLogLevelColor$})"/>
+			<entry key="toColoredLogLevel$description" value="Formats log level as colored text"/>
+			<entry key="toDurationColor" value=":heat(#00bf00=0,#f0e800=300,#ef0000=6900)"/>
+			<entry key="toDurationColor$description" value="Transforms numeric input into a color to highlight a duration in seconds from green over yellow (5 min) to red (2 h)"/>
+			<entry key="toColoredDuration" value=":link(-,${$toDurationString$},,${$toDurationColor$})"/>
+			<entry key="toColoredDuration$description" value="Formats seconds as colored duration using the scale of $toDurationColor$"/>
+			<entry key="toPercentageColor" value=":heat(#ef0000=0,#f0e800=50,#00bf00=50)"/>
+			<entry key="toPercentageColor$description" value="Transforms numeric input into a color to highlight a percentage value from red (0) over yellow (50) to green (100)"/>
+			<entry key="toSuccessPercentageStyle" value=":switch(\&#xA; ^0[.0]*$=&quot;color: #ef0000; font-weight: bold;&quot;,\&#xA; ^100[.0]*$=&quot;color: #00bf00; font-weight: bold;&quot;,\&#xA; :heat(#ef0000=0,#f0e800=98,#00bf00=2)\&#xA;)"/>
+			<entry key="toSuccessPercentageStyle$description" value="Transforms numeric input into a color to highlight a success rate from green (100) over yellow (98) to red (0), additionally styling 0 and 100 in boldface"/>
+			<entry key="toSizeWithHiddenDetailsList" value=":link(-,${:size},${:join})"/>
+			<entry key="toSizeWithHiddenDetailsList$description" value="Convert a list into its size with the contents as popup"/>
+			<entry key="toSumWithHiddenDetailsMap" value=":link(-,${:sum(value)},${:pprint})"/>
+			<entry key="toSumWithHiddenDetailsMap$description" value="Convert a mapping of numbers into their sum with the details as popup"/>
+			<entry key="toSuccessColoredSumWithHiddenDetailsMap" value=":link(-,${:sum(value)},${:pprint},${$computeSuccessPercentage$.$toSuccessPercentageStyle$})"/>
+			<entry key="toSuccessColoredSumWithHiddenDetailsMap$description" value="Transforms a mapping of status strings to counts into their sum, color styled by the percentage of the &apos;Success&apos; counts, with the details as popup"/>
+			<entry key="toSumWithHiddenDetailsGrid" value=":link(-,${:sum(value:sum(value))},${:grid})"/>
+			<entry key="toSumWithHiddenDetailsGrid$description" value="Convert a two-level mapping of numbers into their sum with the details grid as popup"/>
+			<entry key="augmentedNameFormat" value="${displayName} (${name|value})"/>
+			<entry key="augmentedNameFormat$description" value="Standard formatting template for &quot;displayName (name|value)&quot;"/>
+			<entry key="computeSuccessPercentage" value="(100.0*(Success|0)/:sum(value))"/>
+			<entry key="computeSuccessPercentage$description" value="Transforms a mapping of status strings to counts into the percentage of the &apos;Success&apos; counts"/>
+			<entry key="computeTransposedMatrix" value=":flatten(#value):index(key#^.key,value)"/>
+			<entry key="computeTransposedMatrix$description" value="Convert a two‑level mapping representing a matrix to its transposed form by swapping the outer (row) and inner (column) key levels"/>
+			<entry key="computeMapEntryPath" value=":flatten(^?*,eq( &quot;^?.key&quot;, null )):map(key):join(#)"/>
+			<entry key="computeMapEntryPath$description" value="For an entry in a multi‑level mapping, compute a unique identifier by concatenating the entry’s key with its ancestor keys up to the root"/>
+			<entry key="this.matrix" value="^.^.(value|)"/>
+			<entry key="this.matrix$description" value="For an entry in a two‑level mapping representing a matrix (outer keys = rows, inner keys = columns), return the mapping that represents the matrix"/>
+			<entry key="this.row" value="^.value"/>
+			<entry key="this.row$description" value="For an entry in a two‑level mapping representing a matrix (outer keys = rows, inner keys = columns), return the mapping that represents the row which contains the cell represented by the entry"/>
+			<entry key="this.column" value="^.^:cache(_columns-${$computeMapEntryPath$},(value|).$computeTransposedMatrix$):get(key)"/>
+			<entry key="this.column$description" value="For an entry in a two‑level mapping representing a matrix (outer keys = rows, inner keys = columns), return the mapping that represents the column which contains the cell represented by the entry"/>
+			<entry key="linkToCertification" value=":link(/identityiq/certification/certification.jsf#/certification/${id},${name})"/>
+			<entry key="linkToCertification$description" value="Create a link to the Certification given as input"/>
+			<entry key="linkToCertificationExtended" value=":link(\&#xA; /identityiq/certification/certification.jsf#/certification/${id},\&#xA; ${name},\&#xA; ${parent:html(Parent: ${$linkToCertification$}),}\&#xA; ${:Certification(>{id,name}parent.id == $&quot;id&quot;):html(${@.parent:format(\n),}Children: ${:map($linkToCertification$):join(\n )}),}\&#xA;)"/>
+			<entry key="linkToCertificationExtended$description" value="Create a link to the Certification given as input, including a tooltip with its parent/child relationships (if any)"/>
+			<entry key="linkToIdentity" value=":link(/identityiq/define/identity/identity.jsf?id=${id},$augmentedNameFormat$)"/>
+			<entry key="linkToIdentity$description" value="Create a link to the Identity given as input"/>
+			<entry key="linkToIdentityRequest" value=":link(/identityiq/identityRequest/identityRequest.jsf#/request/${name},${name})"/>
+			<entry key="linkToIdentityRequest$description" value="Create a link to the IdentityRequest given as input"/>
+			<entry key="linkToWorkItem" value=":link(/identityiq/workitem/commonWorkItem.jsf#/commonWorkItem/${id},${expiration|name|type},${description,}${owner:format(\nOwner: $augmentedNameFormat$),})"/>
+			<entry key="linkToWorkItem$description" value="Create a link to the WorkItem given as input"/>
+			<entry key="parseCsv" value=":extract(([^,]+\)[, ]*)"/>
+			<entry key="parseCsv$description" value="Split a CSV string into a list"/>
+			<entry key="truncateToFive" value=":replace([1-4]$,0):replace([6-9]$,5)"/>
+			<entry key="truncateToFive$description" value="Truncate the last digit of a number to 0 or 5"/>
+			<entry key="matchKnownErrors" value=":match(\&#xA; Access is denied|\&#xA; There is no such object on the server|\&#xA; The object already exists|\&#xA; Native Identity should not be null or empty|\&#xA; ATT_OR_VALUE_EXISTS|\&#xA; CPL request error: USR_M08 there are still open entries in Aboplan|\&#xA; User services cannot be added in SWS\&#xA;)|\&#xA;&quot;Other&quot;"/>
+			<entry key="matchKnownErrors$description" value="Extracts a known error string from a message given as input"/>
+			<entry key="accountRequest.summary" value=":format(\&#xA; [${application}] ${op} ${nativeIdentity}:${attributeRequests:map($attributeRequest.summary$):join.$conditionalPrependNewlineAndIndent$}\&#xA;)"/>
+			<entry key="accountRequest.summary$description" value="Creates a summary of an account request"/>
+			<entry key="approvalSet.itemsSummary" value="items\&#xA;:map(:format(\&#xA; [${application}] ${operation} ${nativeIdentity,} ${name,} ${value,}${comments:format(\n  ${:join(\n  )}),}\&#xA;))\&#xA;:join"/>
+			<entry key="approvalSet.itemsSummary$description" value="Creates a summary of the items in an approval set"/>
+			<entry key="attributeRequest.summary" value=":format(\&#xA; ${arguments.reason:format([${}] ),}${op} ${name} ${value:join.$conditionalPrependNewlineAndIndent$}\&#xA;)"/>
+			<entry key="attributeRequest.summary$description" value="Creates a summary of an attribute request"/>
+			<entry key="bundle.dependencies" value=":cache(_bundleDependenciesRaw,\&#xA; :union(\&#xA;  :Bundle(>{name,inheritance.name}inheritance.name.notNull() &amp;&amp; type != &quot;SIXEntitlement&quot;),\&#xA;  :Bundle(>{name,requirements.name}requirements.name.notNull())\&#xA; )\&#xA; :group(>inheritance\.name|requirements\.name,name)\&#xA;)\&#xA;:cache(_bundleDependenciesFlattened,\&#xA; :index(key,\&#xA;  :flatten(\&#xA;   value#\&#xA;   :cache(_bundleDependenciesRaw):get(@)*\&#xA;  )\&#xA;  :count\&#xA;  :map(key)\&#xA; )\&#xA;)"/>
+			<entry key="bundle.dependencies$description" value="Returns a flattened index of all role dependencies as Map&#xA;{&#xA; role name -> [names of requiring or inheriting roles]&#xA;}"/>
+			<entry key="bundle.iterateEntitlements" value=":flatten(:union(requirements,inheritance)*#profiles#constraints#value)"/>
+			<entry key="bundle.iterateEntitlements$description" value="Iterate over all entitlements granted by a role. Access data as follows:&#xA;- @ = value&#xA;- ^.property = attribute&#xA;- ^.^.application.name = application name"/>
+			<entry key="bundle.entitlementFormat" value="[${^.^.application.name}/${^.property}] ${}"/>
+			<entry key="bundle.entitlementFormat$description" value="Standard formatting template for entitlements when reading them from $bundle.iterateEntitlements$"/>
+			<entry key="certification.entitySummary" value=":link(#,\&#xA; ${targetDisplayName} (${targetName})\, ${items:size} items,\&#xA; ${items:map(:switch(type,\&#xA;  PolicyViolation=:format(${type}: ${policyViolation.constraintName} (${policyViolation.policyName})),\&#xA;  :format(${type}: ${targetDisplayName} (${targetName}))\&#xA; )):sort:join}\&#xA;)"/>
+			<entry key="certification.entitySummary$description" value="Creates a summary of a certification entity as HTML"/>
+			<entry key="certification.summary" value=":html(\&#xA; ${$linkToCertification$}\n \&#xA; of ${certificationGroups:map(name):join( &amp; )}\n \&#xA; ${activated:format(activated ${})}${finished:format(, finished ${}),}:\n\&#xA; ${entities:map($certification.entitySummary$):join}\&#xA;)"/>
+			<entry key="certification.summary$description" value="Creates a summary of a certification as HTML"/>
+			<entry key="entitlement.grantingRoles" value=":cache(_entitlementRolesIndex-${application.name},\&#xA; :flatten(\&#xA;  :Profile(>application.name == $&quot;application.name&quot;)#\&#xA;  constraints#\&#xA;  value\&#xA; )\&#xA; :group(^.property#,^.^.bundle.name)\&#xA;)\&#xA;:get(attribute|name#value)\&#xA;:flatten(#$bundle.dependencies$:get(@))\&#xA;:count\&#xA;:map(key)"/>
+			<entry key="entitlement.grantingRoles$description" value="For a ManagedAttribute or IdentityEntitlement, return the list of names of all granting roles (excluding entitlement roles)"/>
+			<entry key="entitlement.entitlementFormat" value="[${application.name}/${attribute|name}] ${value}"/>
+			<entry key="entitlement.entitlementFormat$description" value="Standard formatting template for ManagedAttribute and IdentityEntitlement"/>
+			<entry key="identityRequest.itemsSummary" value="items:map(:format(\&#xA; [${application}] \&#xA; ${operation} \&#xA; ${name,} \&#xA; ${value,}${displayableValue:format(/${}),}\&#xA; ${endDate:format( [end=${%yyyy-MM-dd}]),}\&#xA; ${expansionInfo:format(: ${}),} \&#xA; (Approval ${approvalState,Open}, Provisioning ${provisioningState})\&#xA;))\&#xA;:join"/>
+			<entry key="identityRequest.itemsSummary$description" value="Creates a summary of the items in an identity request"/>
+			<entry key="provisioningPlan.summary" value="accountRequests:map(\&#xA; :format(\&#xA;  ${op} \&#xA;  ${application} \&#xA;  ${attributeRequests:map(\&#xA;   :format(\&#xA;    ${op} \&#xA;    ${value:switch(class,List=:format(${:size} )),}\&#xA;    ${name,}\&#xA;   )\&#xA;  ):join( | )}\&#xA; )\&#xA;):join"/>
+			<entry key="provisioningPlan.summary$description" value="Creates a summary of a provisioning plan"/>
+			<entry key="provisioningTransaction.columns" value="created=:link(#,${created},${:toXml})&#xA;modified&#xA;retryCount&#xA;name&#xA;operation&#xA;source&#xA;requester=request.arguments.(requester|createEventMap:map(key):join(/))&#xA;reference=accessRequestId:IdentityRequest.$linkToIdentityRequest$|certificationId:Certification.$linkToCertification$&#xA;identity=identityName&#xA;status=status.$toColoredStatus$&#xA;request=:html(\&#xA; ${request.$accountRequest.summary$}\n\&#xA; ${filtered:link(#,Filtered,${$accountRequest.summary$},red),}\&#xA;)&#xA;request.result.errors:join&#xA;planResult.errors:join"/>
+			<entry key="provisioningTransaction.columns$description" value="Standard column set to display provisioning transactions"/>
+			<entry key="quickLinkOptions.flagsSummary" value=":format(\&#xA;  ${:construct(allowSelf,allowOther,allowBulk):select( eq( &quot;value&quot;, true ) ):format((${:map(key):join(, )})),}\&#xA;  ${options:select(eq( &quot;value&quot;, &quot;true&quot; )):map(key):join(\n  ):format(\n  ${}),}\&#xA;)"/>
+			<entry key="quickLinkOptions.flagsSummary$description" value="Creates a summary of the QuickLink&apos;s option flags"/>
+			<entry key="workflowCase.summary" value=":html(\&#xA; ${name} (${:WorkItem(?workflowCase.id == $&quot;id&quot;),-/-} work items)\n\&#xA; ${\&#xA;  :construct(workflowCases=.)\&#xA;  :flatten(\&#xA;   :flatten(workflowCases#workflow.steps:select(1,eq( &quot;id&quot;, ref( &quot;^.workflow.currentStep&quot; ) )))+\&#xA;  )\&#xA;  :map(:html(\&#xA;   ${(:flatten(^?+):size-1)*&quot; &quot;}\&#xA;   ${^.workflow.name}: \&#xA;   ${name} \&#xA;   (${\&#xA;    subProcess.name|\&#xA;    workItemId:WorkItem.$linkToWorkItem$|\&#xA;    approval:flatten(children*):map(:html(${\&#xA;     workItemId:WorkItem.$linkToWorkItem$|\&#xA;     description|\&#xA;     name|\&#xA;     mode|\&#xA;     workItemType\&#xA;    })):join(|)\&#xA;   })\&#xA;  ))\&#xA;  :join\&#xA; }\&#xA;)"/>
+			<entry key="workflowCase.summary$description" value="Creates a summary of a workflow case's state as HTML"/>
+			<entry key="workflowSummary.summary" value=":format(\&#xA; Step = ${step}\n\&#xA; ${interactions:map(\&#xA;  :format([${workItemType} ${owner} ${state|startDate}] ${request})\&#xA; ):join,}\&#xA;)"/>
+			<entry key="workflowSummary.summary$description" value="Creates a text representation of a WorkflowSummary"/>
+			<entry key="query.objectXmlById" value=":link(rulerunner.jsf?rule=six_generic_query&amp;title=${id}&amp;className=${class.simpleName?:replace(\\$.*,)|class}&amp;filter=id+%3D%3D+%22${id}%22&amp;output=%3AtoXml,${text|id})"/>
+			<entry key="query.objectXmlById$description" value="Renders a link to a Generic Query that displays the input object's XML. If the input object does not provide a class attribute, supply it like this: :construct(id=id,class=&quot;WorkflowCase&quot;), and to submit a custom text to be used for the link instead of the ID, supply it in the :construct() as attribute text. A tooltip can be supplied as attribute tooltip."/>
+		</Map>
+	</Attributes>
+</Configuration>

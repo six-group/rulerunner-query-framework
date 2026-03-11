@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Configuration PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Configuration name="CerberusLibrary">
+	<Description>This is the global CerberusLogic macro library</Description>
+	<Attributes>
+		<Map>
+			<entry key="toSuccessColoredSumWithHiddenDetailsMap" value="accept(&quot;value.$toSuccessColoredSumWithHiddenDetailsMap$&quot;)"/>
+			<entry key="toSuccessColoredSumWithHiddenDetailsMap$description" value="This is a groups postprocessing level action to transform a mapping of status strings to counts into their sum, color styled by the percentage of the &apos;Success&apos; counts, with the details as popup"/>
+			<entry key="toSizeWithHiddenDetailsList" value="accept(&quot;value.$toSizeWithHiddenDetailsList$&quot;)"/>
+			<entry key="toSizeWithHiddenDetailsList$description" value="This is a groups postprocessing level action to transform a list into its size with the contents as popup"/>
+			<entry key="toSumWithHiddenDetailsMap" value="accept(&quot;value.$toSumWithHiddenDetailsMap$&quot;)"/>
+			<entry key="toSumWithHiddenDetailsMap$description" value="This is a groups postprocessing level action to transform a mapping of numbers into their sum with the details&#xA;  as popup"/>
+			<entry key="toSumWithHiddenDetailsGrid" value="accept(&quot;value.$toSumWithHiddenDetailsGrid$&quot;)"/>
+			<entry key="toSumWithHiddenDetailsGrid$description" value="This is a groups postprocessing level action to transform a two-level mapping of numbers into their sum with the details grid as popup"/>
+			<entry key="discardStandaloneCells" value="accept(&#xA; mt( &quot;$this.row$&quot;, 1 )&#xA;).accept(&#xA; mt( &quot;$this.column$&quot;, 1 )&#xA;)"/>
+			<entry key="discardStandaloneCells$description" value="This is a groups postprocessing level action to filter out from a two-level mapping representing a matrix all entries  that represent cells which are alone in their row and column"/>
+		</Map>
+	</Attributes>
+</Configuration>

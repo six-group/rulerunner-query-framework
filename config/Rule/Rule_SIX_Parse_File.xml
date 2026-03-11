@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="javanative" name="six_parse_file">
+	<Description>Parse text files for display or feeding into the Generic Query</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the action executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="paths" type="text">
+				<Description>Absolute path patterns selecting the input files, one per line ("paths" parameter). Paths starting with 'classpath' read classpath resources (no patterns allowed). If more than one file is selected, the path is stored in the record under the key _. Gzipped files (*.gz) are decompressed transparently. The patterns accept the wildcards ? and *.</Description>
+				<Prompt>Files</Prompt>
+			</Argument>
+			<Argument name="unlimitedGlob" type="boolean">
+				<Description>Allow patterns to match more than 100 files ("unlimitedGlob" parameter)</Description>
+				<Prompt>Unlimited globbing</Prompt>
+			</Argument>
+			<Argument name="skip" type="int">
+				<Description>Megabytes to skip at the beginning of the first file ("skip" parameter)</Description>
+				<Prompt>Skip MiB</Prompt>
+			</Argument>
+			<Argument name="filterPattern" type="string">
+				<Description>Match pattern to select lines to examine ("filterPattern" parameter)</Description>
+				<Prompt>Filter</Prompt>
+			</Argument>
+			<Argument name="startPattern" type="string">
+				<Description>Match pattern to start sampling ("startPattern" parameter)</Description>
+				<Prompt>Start</Prompt>
+			</Argument>
+			<Argument name="stopPattern" type="string">
+				<Description>Match pattern string to stop sampling after ("stopPattern" parameter)</Description>
+				<Prompt>Stop</Prompt>
+			</Argument>
+			<Argument name="maxRecords" type="int">
+				<Description>Maximum number of output rows ("maxRecords" parameter)</Description>
+				<Prompt>Maximum records</Prompt>
+			</Argument>
+			<Argument name="parser" type="string">
+				<Description>Specification for parsing lines into records ("parser" parameter) - either a known file type (tomcat.log, iiq.log, meminfo.log, plain) or a regexp with named captures extracting the fields. Unmatched lines will be appended to the last field of the preceding record. Default filetype: file name without compression and timestamp modifiers</Description>
+				<Prompt>Parser</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source>com.six.iam.iiq.rulerunner.rules.ParseFile</Source>
+</Rule>

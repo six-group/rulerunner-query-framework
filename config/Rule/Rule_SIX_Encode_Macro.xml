@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_encode_macro">
+	<Description>Encode macro</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Macro name</Description>
+				<Prompt>Name</Prompt>
+			</Argument>
+			<Argument name="description" type="text">
+				<Description>Macro description</Description>
+				<Prompt>Description</Prompt>
+			</Argument>
+			<Argument name="expansion" type="text">
+				<Description>Macro expansion</Description>
+				<Prompt>Expansion</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import sailpoint.tools.xml.XMLObjectFactory;
+
+var result = new HashMap();
+
+result.put(title, expansion);
+result.put(title + "$description", description);
+
+rulerunnerOutput.printNoEscape("<pre>");
+rulerunnerOutput.print(XMLObjectFactory.getInstance().toXml(result, false));
+rulerunnerOutput.printNoEscape("</pre>");
+]]></Source>
+</Rule>

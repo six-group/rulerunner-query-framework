@@ -1,0 +1,181 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_launcher">
+	<Description>Universal launcher for Emails, Rules, Tasks and Workflows with custom parameters</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the action executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="type" type="choice:Email,Rule,Task,Task (synchronous),Workflow">
+				<Description>Choose the type of object to execute</Description>
+				<Prompt>Execution type</Prompt>
+			</Argument>
+			<Argument name="name" type="string">
+				<Description>Name of the object to execute</Description>
+				<Prompt>Name</Prompt>
+			</Argument>
+			<Argument name="argumentDefinitions" type="text">
+				<Description>Execution arguments as lines of name=expression (using OrionQL; access launcher identity as 'launcher', emailTemplate/rule/task/workflow name as 'emailTemplate', 'rule', 'task' resp. 'workflow'). Email recipients can be given as to, cc and bcc arguments, the default recipient is you.</Description>
+				<Prompt>Arguments</Prompt>
+			</Argument>
+			<Argument name="resultNameTemplate" type="string">
+				<Description>Name to use for the task result resp. workflow case, ignored for email and rule (OrionQL formatting template; access launcher identity as 'launcher', task/workflow name as 'task' resp. 'workflow' and arguments as 'arguments'). Default for workflow: ${workflow}: ${launcher.name} - ${:now}</Description>
+				<Prompt>Result name</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import sailpoint.api.TaskManager;
+import sailpoint.object.Attributes;
+import sailpoint.object.Configuration;
+import sailpoint.object.EmailOptions;
+import sailpoint.object.EmailTemplate;
+import sailpoint.object.Identity;
+import sailpoint.object.Rule;
+import sailpoint.tools.MessageRenderer;
+
+import com.six.iam.util.IndexedData;
+import com.six.iam.util.OrionQL;
+import com.six.iam.util.WorkflowHelper;
+
+// prepare input
+var expressions = ((argumentDefinitions != null) && !argumentDefinitions.trim().isEmpty()) ?
+	OrionQL.compileAll(argumentDefinitions.trim(), "\r?\n", true, false) :
+	null;
+var proxy = OrionQL.wrap(null, context, null, rulerunnerEnvironment);
+proxy.implant("launcher", context.getObject(Identity.class, context.getUserName()));
+var arguments = (expressions != null) ? OrionQL.evaluateAll(expressions, proxy) : new HashMap();
+proxy.implant("arguments", arguments);
+
+// execute action
+var resultName = null;
+var output = null;
+switch (type)
+{
+	case "Email":
+	{
+		var emailTemplate = context.getObject(EmailTemplate.class, name);
+		if (emailTemplate == null)
+		{
+			throw new RuntimeException("No such email template");
+		}
+		proxy.implant("emailTemplate", name);
+		var emailOptions = new EmailOptions();
+		var to = arguments.get("to");
+		if ((to == null) || to.isEmpty())
+		{
+			to = proxy.access("launcher.email");
+			if (to == null)
+			{
+				throw new RuntimeException("No recipient to send to");
+			}
+		}
+		emailOptions.setTo(to);
+		var cc = arguments.get("cc");
+		if ((cc != null) && !cc.isEmpty())
+		{
+			emailOptions.setCc(cc);
+		}
+		var bcc = arguments.get("bcc");
+		if ((bcc != null) && !bcc.isEmpty())
+		{
+			emailTemplate.setBcc(bcc);
+		}
+		emailOptions.setVariables(arguments);
+		context.sendEmailNotification(emailTemplate, emailOptions);
+		var rendered = emailTemplate.compile(context, Configuration.getSystemConfig(), emailOptions);
+		output = new StringBuilder();
+		output.append(rendered.getSubject());
+		output.append("\n\n");
+		output.append(rendered.getBody());
+		break;
+	}
+	case "Rule":
+	{
+		var rule = context.getObject(Rule.class, name);
+		if (rule == null)
+		{
+			throw new RuntimeException("No such rule");
+		}
+		proxy.implant("rule", name);
+		output = context.runRule(rule, arguments);
+		break;
+	}
+	case "Task":
+	case "Task (synchronous)":
+	{
+		proxy.implant("task", name);
+		resultName = ((resultNameTemplate != null) && !resultNameTemplate.isEmpty()) ? proxy.format(resultNameTemplate) : null;
+		if (resultName != null)
+		{
+			arguments.put("resultName", resultName);
+		}
+		var taskManager = new TaskManager(context);
+		if ("Task".equals(type))
+		{
+			taskManager.run(name, new Attributes(arguments));
+			if (arguments.isEmpty())
+			{
+				rulerunnerOutput.addMessage("Task was launched in background");
+			}
+		}
+		else
+		{
+			var taskResult = taskManager.runSync(name, new Attributes(arguments));
+			var taskReturns = taskResult.getAttributes();
+			var taskMessages = taskResult.getMessages();
+			var buffer = new StringBuilder();
+			if ((taskMessages != null) && !taskMessages.isEmpty())
+			{
+				buffer.append("\n\n");
+				for (var message: taskMessages)
+				{
+					buffer.append(message.getLocalizedMessage());
+					buffer.append("\n");
+				}
+			}
+			output = String.format("%s\n\n%s%s",
+					taskResult.getCompletionStatus(),
+					(taskReturns == null) ? "" : IndexedData.pprint(new TreeMap(taskReturns), -1, false),
+					buffer.toString()
+			);
+		}
+		break;
+	}
+	case "Workflow":
+	{
+		proxy.implant("workflow", name);
+		resultName = proxy.format(((resultNameTemplate != null) && !resultNameTemplate.isEmpty()) ? resultNameTemplate : "${workflow}: ${launcher.name} - ${:now}");
+		WorkflowHelper.startWorkflow(context, name, arguments, resultName);
+		break;
+	}
+}
+
+// write output
+if ((resultName != null) || !arguments.isEmpty())
+{
+	rulerunnerOutput.printNoEscape("<pre>");
+	if (resultName != null)
+	{
+		rulerunnerOutput.print(resultName);
+	}
+	if (!arguments.isEmpty())
+	{
+		if (resultName != null)
+		{
+			rulerunnerOutput.print("\n\n");
+		}
+		rulerunnerOutput.print(IndexedData.pprint(arguments, -1, false));
+	}
+	rulerunnerOutput.printNoEscape("</pre>");
+}
+if (output != null)
+{
+	rulerunnerOutput.printNoEscape("<pre>");
+	rulerunnerOutput.print(output.toString());
+	rulerunnerOutput.printNoEscape("</pre>");
+}
+]]></Source>
+</Rule>

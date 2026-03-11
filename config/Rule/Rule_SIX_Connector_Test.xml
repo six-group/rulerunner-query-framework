@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="javanative" name="six_connector_test">
+	<Description>Batch test of endpoint functionality</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the application set tested upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="applicationFilter" type="text">
+				<Description>Optional Sailpoint filter selecting the endpoints to test. Default: all automatic endpoints</Description>
+				<Prompt>Application filter</Prompt>
+			</Argument>
+			<Argument name="testSuite" type="choice:1=List,2=Test Connection,3=Iterate Groups,4=Iterate Accounts,5=Regular Aggregation,6=Random Read,7=Attribute Provisioning,8=Entitlement Provisioning,9=Account Enabling/Disabling,10=Account Creation/Deletion,11=Full Account Provisioning Lifecycle">
+				<Description>Choose the operation to invoke for the endpoint</Description>
+				<Prompt>Operation</Prompt>
+			</Argument>
+			<Argument name="identitySelector" type="string">
+				<Description>Identity to be used for tests. Default: random</Description>
+				<Prompt>Identity</Prompt>
+			</Argument>
+			<Argument name="attributeSelector" type="string">
+				<Description>Comma separated list of initial attribute assignments and attributes to select from the application schema for provisioning tests. For entitlement provisioning, on no match all entitlement attributes are used.</Description>
+				<Prompt>Attribute selector</Prompt>
+			</Argument>
+			<Argument name="retries" type="int">
+				<Description>Number of provisioning retries (Default: 0). The retry interval is 10 seconds.</Description>
+				<Prompt>Retries</Prompt>
+			</Argument>
+			<Argument name="waitTime" type="int">
+				<Description>Number of seconds to wait after provisioning before checking the result (Default: 0)</Description>
+				<Prompt>Wait time</Prompt>
+			</Argument>
+			<Argument name="numIterations" type="int">
+				<Description>Number of tests per application (Default: 1) or maximum number of accounts/groups to iterate (Default: infinity)</Description>
+				<Prompt>Iterations</Prompt>
+			</Argument>
+			<Argument name="toggleSimulation" type="boolean">
+				<Description>Temporarily turn off SimulateProvisioning if needed</Description>
+				<Prompt>Toggle simulation mode</Prompt>
+			</Argument>
+			<Argument name="emulateRead" type="boolean">
+				<Description>Emulate the getObject() operation using iterate()</Description>
+				<Prompt>Emulate random read</Prompt>
+			</Argument>
+			<Argument name="verbose" type="boolean">
+				<Description>Show provisioning and error details</Description>
+				<Prompt>Verbose</Prompt>
+			</Argument>
+			<Argument name="runInBackground" type="boolean">
+				<Description>Enable for long-running tests to get the result sent by email</Description>
+				<Prompt>Execute in background</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source>com.six.iam.iiq.rulerunner.rules.ConnectorTest</Source>
+</Rule>

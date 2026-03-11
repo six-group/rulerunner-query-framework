@@ -1,0 +1,83 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_list_directory">
+	<Description>List contents of file system directory</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the action executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="path" type="string">
+				<Description>Absolute path to directory to list ("path" parameter)</Description>
+				<Prompt>Path</Prompt>
+			</Argument>
+			<Argument name="filter" type="string">
+				<Description>Regular expression to match entries against ("filter" parameter)</Description>
+				<Prompt>Filter</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import java.util.regex.Pattern;
+import java.text.SimpleDateFormat;
+
+// prepare parameters
+var filterPattern = ((filter == null) || filter.isEmpty()) ? null : Pattern.compile(filter);
+var timestampFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+var directory = new File(path);
+if (!directory.isDirectory())
+{
+	throw new RuntimeException("Not a directory");
+}
+var subdirs = new ArrayList();
+var files = new ArrayList();
+for (var entry: directory.list())
+{
+	if ((filterPattern == null) || filterPattern.matcher(entry).matches())
+	{
+		(new File(directory, entry).isDirectory() ? subdirs : files).add(entry);
+	}
+}
+Collections.sort(subdirs);
+Collections.sort(files);
+subdirs.addAll(files);
+
+// return result when invoked from the Generic Query
+if ((rulerunnerOutput == void) || (rulerunnerOutput == null))
+{
+    var entries = new ArrayList();
+    for (var entry: subdirs)
+    {
+        var file = new File(directory, entry);
+        var map = new HashMap();
+        map.put("name", file.getName());
+        map.put("type", file.isDirectory() ? "directory" : "file");
+        map.put("lastModified", new Date(file.lastModified()));
+        map.put("length", file.length() / 1024.0);
+        entries.add(map);
+    }
+    return entries.iterator();
+}
+
+// otherwise write output
+rulerunnerOutput.printNoEscape("<pre>");
+for (var entry: subdirs)
+{
+	var file = new File(directory, entry);
+	rulerunnerOutput.print(timestampFormatter.format(new Date(file.lastModified())));
+	if (file.isDirectory())
+	{
+		rulerunnerOutput.print("               ");
+	}
+	else
+	{
+		rulerunnerOutput.print("%10.0f kB  ", file.length() / 1024.);
+	}
+	rulerunnerOutput.print(entry);
+	rulerunnerOutput.print("\n");
+}
+rulerunnerOutput.printNoEscape("</pre>");
+]]></Source>
+</Rule>
