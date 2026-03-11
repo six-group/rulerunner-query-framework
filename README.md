@@ -84,27 +84,27 @@ What you will find in the package:
 * The Rule Runner – a platform to run rules from the IIQ GUI with customized
   input forms and true HTML output, synchronously or as background tasks
 * A set of rules written for this platform, the most notable being:
- * The Generic Query – a powerful tool to query the IIQ database based on the
-   IIQ object model as well as other data sources like log files, offering
-   sophisticated query and presentation possibilities
- * The Thread Watcher – a tool to monitor thread execution for diagnosing
-   hangs and other unwanted conditions
- * The Beanshell Runner – a small tool to run Beanshell snippets on the
-   application server for development and prototyping purposes
- * Rules for interactive and batch testing of application connector
-   functionality
+  * The Generic Query – a powerful tool to query the IIQ database based on the
+    IIQ object model as well as other data sources like log files, offering
+    sophisticated query and presentation possibilities
+  * The Thread Watcher – a tool to monitor thread execution for diagnosing
+    hangs and other unwanted conditions
+  * The Beanshell Runner – a small tool to run Beanshell snippets on the
+    application server for development and prototyping purposes
+  * Rules for interactive and batch testing of application connector
+    functionality
 * A small but powerful framework with no external dependencies that provides
   the basis for these tools and many other possible applications:
- * QueryHelper – a thin wrapper around the SailpointContext search() methods
-   that simplifies programming by giving direct access to extended attributes
-   and returning records as Map<String, Object> instead of Object[]
- * IndexedData and TabularData - utility classes for working with in-memory
-   indexed data and tabular data
- * CerberusLogic - a lightweight business rules engine using a simple syntax
-   and offering powerful selectors resembling Sailpoint filters that can be
-   used in flexible ways 
- * OrionQL - a data query and transformation engine using a pipeline notation
-   for navigating object models and transforming data
+  * QueryHelper – a thin wrapper around the SailpointContext search() methods
+    that simplifies programming by giving direct access to extended attributes
+    and returning records as Map<String, Object> instead of Object[]
+  * IndexedData and TabularData - utility classes for working with in-memory
+    indexed data and tabular data
+  * CerberusLogic - a lightweight business rules engine using a simple syntax
+    and offering powerful selectors resembling Sailpoint filters that can be
+    used in flexible ways 
+  * OrionQL - a data query and transformation engine using a pipeline notation
+    for navigating object models and transforming data
 * Extensive documentation
 
 ## Getting Started
