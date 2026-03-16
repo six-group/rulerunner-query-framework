@@ -1,0 +1,190 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_sql_query">
+	<Description>SQL Query</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the query executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="tables" type="text">
+				<Description>from clause ("tables" parameter, mandatory)</Description>
+				<Prompt>from</Prompt>
+			</Argument>
+			<Argument name="columns" type="text">
+				<Description>columns clause ("columns" parameter, mandatory)</Description>
+				<Prompt>select</Prompt>
+			</Argument>
+			<Argument name="where" type="text">
+				<Description>where condition ("where" parameter)</Description>
+				<Prompt>where</Prompt>
+			</Argument>
+			<Argument name="grouping" type="text">
+				<Description>grouping condition ("grouping" parameter)</Description>
+				<Prompt>group by</Prompt>
+			</Argument>
+			<Argument name="having" type="text">
+				<Description>having condition ("having" parameter)</Description>
+				<Prompt>having</Prompt>
+			</Argument>
+			<Argument name="ordering" type="text">
+				<Description>order condition ("ordering" parameter)</Description>
+				<Prompt>order by</Prompt>
+			</Argument>
+			<Argument name="maxClobSize" type="int">
+				<Description>Maximum number of characters to read from CLOBs ("maxClobSize" parameter). Default: 256</Description>
+				<Prompt>Maximum CLOB size</Prompt>
+			</Argument>
+			<Argument name="maxRows" type="int">
+				<Description>Maximum number of rows ("maxRows" parameter)</Description>
+				<Prompt>Maximum rows</Prompt>
+			</Argument>
+			<Argument name="runInBackground" type="boolean">
+				<Description>Enable for long-running queries to get the result sent by email ("runInBackground" parameter)</Description>
+				<Prompt>Execute in background</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import oracle.sql.CLOB;
+import com.six.iam.util.TabularData;
+import java.util.NoSuchElementException;
+
+// prepare parameters
+var rulerunnerOutputProxy = ((rulerunnerOutput == void) || (rulerunnerOutput == null)) ? null : rulerunnerOutput;
+var isSlaveExecution = (rulerunnerOutputProxy == null);
+var maximumClobSize = (maxClobSize == null) ? 256 : maxClobSize;
+var maximumRows = maxRows;
+
+// prepare SQL statement
+var statement = new StringBuilder();
+statement.append("select ").append(columns).append(" from ").append(tables);
+var clauses = Arrays.asList(
+	" where ", where,
+	" group by ", grouping,
+	" having ", having,
+	" order by ", ordering
+).iterator();
+while(clauses.hasNext())
+{
+	var clause = clauses.next();
+	var value = clauses.next();
+	if ((value != null) && !value.isEmpty())
+	{
+		statement.append(clause).append(value);
+	}
+}
+
+// execute query
+if (!isSlaveExecution)
+{
+	rulerunnerOutputProxy.startTimeMonitoring();
+}
+var recordCount = 0;
+var preparedStatement = context.getJdbcConnection().prepareStatement(statement.toString());
+var resultSet = preparedStatement.executeQuery();
+var metadata = preparedStatement.getMetaData();
+var rows = new Iterator()
+{
+	private boolean isNext = false;
+
+	public boolean hasNext()
+	{
+		if (isNext)
+		{
+			return true;
+		}
+		if ((maximumRows != null) && (recordCount >= maximumRows))
+		{
+			if (rulerunnerOutputProxy != null)
+			{
+				rulerunnerOutputProxy.addMessage("Maximum row count was reached");
+			}
+			return false;
+		}
+		if ((rulerunnerOutputProxy != null) && rulerunnerOutputProxy.isTerminationRequested(recordCount == 0))
+		{
+			return false;
+		}
+		if (resultSet.next())
+		{
+			isNext = true;
+		}
+		return isNext;
+	}
+
+	public Map next()
+	{
+		if (!hasNext())
+		{
+			throw new NoSuchElementException();
+		}
+		var record = new HashMap();
+		for (var i = 1; i <= metadata.getColumnCount(); ++i)
+		{
+			var value = resultSet.getObject(i);
+			if (value instanceof CLOB)
+			{
+				var numCharactersLeft = maximumClobSize;
+				var buffer = new char[1024];
+				var reader = value.getCharacterStream();
+				var clob = new StringBuilder();
+				while (numCharactersLeft > 0)
+				{
+					var chunkSize = reader.read(buffer, 0, (numCharactersLeft > buffer.length) ? buffer.length : numCharactersLeft);
+					if (chunkSize <= 0)
+					{
+						break;
+					}
+					clob.append(buffer, 0, chunkSize);
+					numCharactersLeft -= chunkSize;
+					if ((numCharactersLeft <= 0) && (reader.read(buffer, 0, 1) > 0))
+					{
+						clob.append("...");
+					}
+				}
+				value = clob.toString();
+			}
+			if (value != null)
+			{
+				record.put(metadata.getColumnLabel(i), value);
+			}
+		}
+		++recordCount;
+		isNext = false;
+		return record;
+	}
+};
+
+// return the iterator when invoked from the Generic Query
+if (isSlaveExecution)
+{
+	return rows;
+}
+
+// otherwise render output
+rulerunnerOutputProxy.write(statement.toString().getBytes("UTF-8"));
+rulerunnerOutputProxy.write("<br><br>".getBytes("UTF-8"));
+var columns = new ArrayList();
+for (var i = 1; i <= metadata.getColumnCount(); ++i)
+{
+	columns.add(metadata.getColumnLabel(i));
+}
+var writer = new TabularData(columns, false);
+writer.setOutputStream(rulerunnerOutputProxy, "UTF-8");
+writer.writeHtmlHeader();
+try
+{
+	while (rows.hasNext())
+	{
+		writer.writeHtmlRecord(rows.next());
+	}
+}
+finally
+{
+	writer.writeHtmlFooter();
+}
+rulerunnerOutputProxy.addMessage(String.format("%d rows in %.02f seconds", recordCount, rulerunnerOutputProxy.getDuration()));
+]]></Source>
+</Rule>

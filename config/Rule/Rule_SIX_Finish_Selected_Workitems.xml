@@ -1,0 +1,255 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_finish_selected_workitems">
+	<Description>Batch approve or reject of workitems</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the query executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="type" type="choice:,Approval,Certification,Event,Form,Generic,ManualAction,PolicyViolation">
+				<Description>Work item type</Description>
+				<Prompt>Type</Prompt>
+			</Argument>
+			<Argument name="requester" type="string">
+				<Description>Name of the work item requester</Description>
+				<Prompt>Requester name</Prompt>
+			</Argument>
+			<Argument name="owner" type="string">
+				<Description>Name of the work item owner</Description>
+				<Prompt>Owner name</Prompt>
+			</Argument>
+			<Argument name="target" type="string">
+				<Description>Name of the target identity</Description>
+				<Prompt>Target name</Prompt>
+			</Argument>
+			<Argument name="filter" type="string">
+				<Description>Sailpoint filter expression template to do additional work item selection. Default: state.isNull()</Description>
+				<Prompt>Additional filter</Prompt>
+			</Argument>
+			<Argument name="selector" type="text">
+				<Description>CerberusLogic rules to further narrow down the work items selection</Description>
+				<Prompt>Additional selection rules</Prompt>
+			</Argument>
+			<Argument name="ordering" type="string">
+				<Description>Comma separated list of attributes to sort the work items by. Append " desc" to an attribute for reverse ordering. Default: workflowCase.modified desc, created</Description>
+				<Prompt>Ordering</Prompt>
+			</Argument>
+			<Argument name="action" type="choice:,Approve,Reject">
+				<Description>Action to take on the work item or leave empty to have them listed only</Description>
+				<Prompt>Action</Prompt>
+			</Argument>
+			<Argument name="comment" type="string">
+				<Description>Work item completion comment (mandatory)</Description>
+				<Prompt>Business reason</Prompt>
+			</Argument>
+			<Argument name="maxRows" type="int">
+				<Description>Maximum number of work items to process</Description>
+				<Prompt>Maximum count</Prompt>
+			</Argument>
+			<Argument name="maxRetries" type="int">
+				<Description>Maximum number of processing retries (10 s interval). Default: 10</Description>
+				<Prompt>Maximum retries</Prompt>
+			</Argument>
+			<Argument name="runInBackground" type="boolean">
+				<Description>Enable for long-running queries to get the result sent by email</Description>
+				<Prompt>Execute in background</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import com.six.iam.util.CerberusLogic;
+import com.six.iam.util.Literals;
+import com.six.iam.util.MacroLibrary;
+import com.six.iam.util.OrionQL;
+import com.six.iam.util.QueryHelper;
+import com.six.iam.util.TabularData;
+
+import java.util.regex.Pattern;
+
+import sailpoint.api.ObjectAlreadyLockedException;
+import sailpoint.api.Workflower;
+import sailpoint.object.Comment;
+import sailpoint.object.Filter;
+import sailpoint.object.QueryOptions;
+import sailpoint.object.WorkItem;
+
+// check object against rules, if any
+boolean acceptObject(CerberusLogic.RuleSet selectedRules, OrionQL.Proxy proxy)
+{
+	if (selectedRules != null)
+	{
+		var decision = selectedRules.approve(proxy);
+		if ((decision == null) || !decision.isAccept)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+// load macros
+var orionLibrary = new MacroLibrary("OrionLibrary", context).load().load(context.getUserName());
+var cerberusLibrary = new MacroLibrary("CerberusLibrary", context).load().load(context.getUserName());
+
+var baseProxy = OrionQL.wrap(null, context, orionLibrary, rulerunnerEnvironment);
+
+// prepare parameters
+if ((action != null) && !action.isEmpty() && ((comment == null) || comment.isEmpty()))
+{
+	return "<div class=\"error\">Please provide a business reason!</div>";
+}
+var queryOptions = new QueryOptions();
+if ((type != null) && !type.isEmpty())
+{
+	queryOptions.addFilter(Filter.eq("type", WorkItem.Type.valueOf(type)));
+}
+if ((requester != null) && !requester.isEmpty())
+{
+	queryOptions.addFilter(Filter.eq("requester.name", requester));
+}
+if ((owner != null) && !owner.isEmpty())
+{
+	queryOptions.addFilter(Filter.eq("owner.name", owner));
+}
+if ((target != null) && !target.isEmpty())
+{
+	queryOptions.addFilter(Filter.eq("targetName", target));
+}
+if ((filter != null) && !filter.isEmpty())
+{
+	var filterFormatter = OrionQL.compile(filter, true);
+	queryOptions.addFilter(Filter.compile(filterFormatter.access(baseProxy)));
+}
+else
+{
+	queryOptions.addFilter(Filter.isnull("state"));
+}
+if ((ordering != null) && !ordering.isEmpty())
+{
+	var pattern = Pattern.compile("([^ ,]+) *(desc)?");
+	var matcher = pattern.matcher(ordering);
+	while (matcher.find())
+	{
+		queryOptions.addOrdering(matcher.group(1), !"desc".equals(matcher.group(2)));
+	}
+}
+else
+{
+	queryOptions.addOrdering("workflowCase.modified", false);
+	queryOptions.addOrdering("created", false);
+}
+var selectionRules = ((selector == null) || selector.isEmpty()) ? null: CerberusLogic.compile(selector, null, cerberusLibrary);
+var targetState = Literals.asMap("Approve", WorkItem.State.Finished).add("Reject", WorkItem.State.Rejected).get(action);
+var workflower = (targetState == null) ? null : new Workflower(context);
+
+// prepare output
+TabularData output = new TabularData(List.of(
+	"created",
+	"name=:link(/identityiq/workitem/commonWorkItem.jsf#/commonWorkItem/${id},${name})",
+	"type",
+	"requester=requester:format($augmentedNameFormat$\\n${@.workflowCase.workflow.variables.sixIdentityRequestId,}\\n${@.workflowCase.workflow.variables.sixIdentityRequestId:IdentityRequest.created,}\\n${@.workflowCase.workflow.variables.sixIdentityRequestId:IdentityRequest.items:select(eq(\"application\", \"IIQ\")):map(:format(${operation} ${value})):join,})",
+	"owner=owner.lastname:format(${@.owner.$toAugmentedName$})|owner.name",
+	"target=targetName:Identity.$toAugmentedName$|targetName",
+	"state",
+	"description=:format(${description.$limit60$}${completionComments:format(\\n  ${}),}\\n${approvalSet.$approvalSet.itemsSummary$,})",
+	"workflow/certification=workflowCase.$workflowCase.summary$|certification:Certification.$certification.summary$"
+), false, orionLibrary);
+output.setOutputStream(rulerunnerOutput, "UTF-8");
+output.writeHtmlHeader();
+
+// process workitems
+rulerunnerOutput.startTimeMonitoring();
+var primaryCount = 0;
+var processedCount = 0;
+var errorCount = 0;
+queryOptions.setCloneResults(true);
+try
+{
+	var resultSet = QueryHelper.search(context, WorkItem.class, queryOptions);
+	while (resultSet.hasNext())
+	{
+		if ((maxRows != null) && (processedCount >= maxRows))
+		{
+			rulerunnerOutput.addMessage("Maximum count was reached");
+			break;
+		}
+		if ((processedCount > 0) && rulerunnerOutput.isTerminationRequested(false))
+		{
+			break;
+		}
+		var workItem = resultSet.next();
+		++primaryCount;
+		var proxy = baseProxy.derive(workItem);
+		var selectedRules = (selectionRules == null) ? null : selectionRules.select(proxy);
+		if ((selectionRules != null) && ((selectedRules == null) || !acceptObject(selectedRules, proxy)))
+		{
+			continue;
+		}
+		if (targetState == null)
+		{
+			++processedCount;
+			output.writeHtmlRecord(proxy);
+		}
+		else if (workItem.getType() == WorkItem.Type.Event)
+		{
+			rulerunnerOutput.addError("Ignoring 'Event' work item %s", workItem.getName());
+		}
+		else
+		{
+			++processedCount;
+			try
+			{
+				var approvalSet = workItem.getApprovalSet();
+				if (approvalSet != null)
+				{
+					var items = approvalSet.getItems();
+					if (items != null)
+					{
+						for (var item: items)
+						{
+							item.add(new Comment(comment, context.getUserName()));
+							item.setState(targetState);
+						}
+					}
+				}
+				workItem.setState(targetState);
+				workItem.setCompletionComments(comment);
+				workItem.setCompleter(context.getUserName());
+				output.writeHtmlRecord(proxy);
+				context.commitTransaction();
+				var retriesLeft = (maxRetries == null) ? 10 : maxRetries;
+				while (true)
+				{
+					try
+					{
+						workflower.process(workItem, true);
+						break;
+					}
+					catch (ObjectAlreadyLockedException e)
+					{
+						if (--retriesLeft < 0)
+						{
+							break;
+						}
+						rulerunnerOutput.addError("Retrying processing of %s", workItem.getName());
+						Thread.sleep(10000);
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				rulerunnerOutput.addError("%s processing work item %s: %s", e.getClass().getSimpleName(), workItem.getName(), e.getMessage());
+				++errorCount;
+			}
+		}
+	}
+}
+finally
+{
+	output.writeHtmlFooter();
+}
+rulerunnerOutput.addMessage("%d out of %d work items processed in %.02f seconds, %d errors", processedCount, primaryCount, rulerunnerOutput.getDuration(), errorCount);
+]]></Source>
+</Rule>

@@ -1,0 +1,121 @@
+body {
+    overflow-x: scroll;
+}
+.argumentsTable input {
+    padding: 2px;
+    margin-bottom: 2px;
+}
+.argumentsTable textarea {
+    padding: 2px;
+}
+.argumentsTable select {
+    margin-bottom: 2px;
+}
+.rulerunnerOutput {
+    margin-top: 8px;
+    min-height: 100vh;
+}
+.rulerunnerOutput #navtoggle { display: none; }
+.rulerunnerOutput #navigator { display: none; }
+@media screen {
+    .rulerunnerOutput #navtoggle { display: block; position: fixed; left: 1px; bottom: -6px; font-size: 24px; color: #3466aa; opacity: 0.40; }
+    .rulerunnerOutput #navigator { z-index: 1; position: fixed; left: 2px; bottom: 2px; margin: 0; padding: 1ex; overflow: auto; background-color: #f8f8f8; border: 1px solid grey; border-radius: 0.7ex; }
+    .rulerunnerOutput #navtoggle:hover + #navigator, #navigator:hover { display: block; width: auto; height: auto; max-height: 80%; }
+    .rulerunnerOutput #navigator h3 { margin-top: 0; }
+    .rulerunnerOutput #navigator input { display: none; }
+    .rulerunnerOutput #navigator div { margin: 0; padding: 0; font-size: 8pt; white-space: nowrap; }
+    .rulerunnerOutput #navigator div.folder { margin-left: 1.1em; display: none; }
+    .rulerunnerOutput #navigator input:checked + div + div.folder { display: block; }
+    .rulerunnerOutput #navigator label { font-family: monospace; color: #f80000; display: inline-block; width: 1em; cursor: pointer; }
+    .rulerunnerOutput #navigator label.toggle:before { content: "+"; }
+    .rulerunnerOutput #navigator input:checked + div label.toggle:before { content: "-"; }
+    .rulerunnerOutput #navigator a:link { color: black; text-decoration: none; }
+    .rulerunnerOutput #navigator a:visited { color: black; }
+    .rulerunnerOutput #navigator a:hover { color: blue; text-decoration: underline; }
+}
+.rulerunnerOutput label {
+    margin: 0;
+    font-weight: normal;
+}
+.rulerunnerOutput a[title]:not([href]) {
+    color: black;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: grey;
+    cursor: default;
+}
+.rulerunnerOutput th, .rulerunnerOutput td {
+    padding: 1px 3px;
+    border: 1px solid grey;
+    vertical-align: top;
+    white-space: pre;
+}
+.rulerunnerOutput table thead {
+    position: sticky;
+    inset-block-start: -1px;
+}
+.rulerunnerOutput table tbody th {
+    position: sticky;
+    inset-inline-start: -2px;
+}
+.rulerunnerOutput th {
+    background-color: lightgray;
+    font-weight: bold;
+}
+.rulerunnerOutput td.numeric:not(:has(span.chart)) {
+    text-align: right;
+}
+.rulerunnerOutput div.error {
+    color: red;
+    white-space: pre;
+}
+/* http://stackoverflow.com/questions/7076052/vertically-rotate-text-inside-an-html-table-header-cell
+   --> kizu, upd: --> http://dabblet.com/gist/4072362 */
+.rulerunnerOutput .vertical-text {
+    width: 1.2em;
+    margin-left: -0.3em;
+}
+.rulerunnerOutput .vertical-text > div {
+    display: inline-block;
+    white-space: nowrap;
+    transform: translate(0,100%) rotate(-90deg);
+    transform-origin: 0 0;
+}
+.rulerunnerOutput .vertical-text > div:after {
+    content: "";
+    display: block;
+    /* stretch the parent to be square by using the mechanics of vertical margins */
+    margin: -1em 0 100%;
+}
+/* https://www.w3schools.com/css/css_tooltip.asp -> https://www.w3schools.com/css/tryit.asp?filename=trycss_tooltip */
+.rulerunnerOutput .pinnable-tooltip-container input, .rulerunnerOutput .pinnable-tooltip-container .pinnable-tooltip-content {
+    display: none;
+    text-align: left;
+}
+.rulerunnerOutput .pinnable-tooltip-content > div, .rulerunnerOutput .pinnable-tooltip-content > table {
+    background-color: white;
+}
+.rulerunnerOutput .pinnable-tooltip-container :first-child:hover ~ input:not(:checked) ~ div.pinnable-tooltip-content,
+.rulerunnerOutput .pinnable-tooltip-container input:not(:checked) ~ .pinnable-tooltip-content:hover {
+    display: inline-block;
+    position: absolute;
+    margin-left: -2ex;
+    margin-top: 1.8ex;
+    background-color: #f0f0f0;
+    padding: 0.7ex;
+    border: 1px solid grey;
+    border-radius: 0.5ex;
+    z-index: 1;
+    overflow: auto;
+    max-width: 60vw;
+    max-height: 60vh;
+}
+.rulerunnerOutput .pinnable-tooltip-container input:checked ~ .pinnable-tooltip-content {
+    display: block;
+}
+.rulerunnerOutput .pinnable-tooltip-container input + label::after {
+    content: "\25BE";
+}
+.rulerunnerOutput .pinnable-tooltip-container input:checked + label::after {
+    content: "\25B4";
+}

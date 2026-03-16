@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Configuration PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Configuration name="RulerunnerLibrary.queries">
+	<Description>This library contains customized Generic Queries</Description>
+	<Attributes>
+		<Map>
+			<entry key="show_task_day">
+				<value>
+					<Rule language="proxy">
+						<Description>Show task results for day</Description>
+						<Signature>
+							<Inputs>
+								<Argument name="taskName" type="string">
+									<Description>Task definition name</Description>
+									<Prompt>Task</Prompt>
+								</Argument>
+								<Argument name="taskDay" type="date">
+									<Description>Format: yyyy-MM-dd</Description>
+									<Prompt>Day</Prompt>
+								</Argument>
+							</Inputs>
+						</Signature>
+						<Attributes>
+							<Map>
+								<entry key="title" value="Task results (partitioned) timeline for task day"/>
+								<entry key="targetRuleName" value="six_generic_query"/>
+								<entry key="targetRuleArguments">
+									<value>
+										<Attributes>
+											<Map>
+												<entry key="className" value="TaskResult"/>
+												<entry key="filter" value="definition.name == $&quot;:env(taskName)&quot; &amp;&amp;&#xA;created > $&quot;:env(taskDay)&quot; &amp;&amp;&#xA;created &lt; $&quot;:env(taskDay):date(+1d)&quot;"/>
+												<entry key="subquery" value=":construct(\&#xA; [launcher]=launcher,\&#xA; [host]=host,\&#xA; [progress]=progress,\&#xA; [runLength]=runLength.$toDurationString$,\&#xA; [completionStatus]=completionStatus,\&#xA; [messages]=messages:join,\&#xA; *=attributes\&#xA;)"/>
+												<entry key="computations" value="Attribute( &quot;value&quot; ).when(&#xA; &quot;value:link(#,${:size} partitions,${:index(>name.$softWrap40$,:construct([completionStatus]=completionStatus:link(#,${},,${$toStatusColor$}),[messages]=messages:map($softWrap60$):join,*=attributes)):grid})&quot;,&#xA; eq( &quot;key&quot;, &quot;taskResultPartitions&quot; )&#xA;).when(&#xA; &quot;value:link(#,${},,${$toStatusColor$})&quot;,&#xA; eq( &quot;key&quot;, &quot;[completionStatus]&quot; )&#xA;).when(&#xA; &quot;value.$toString$:replace(&amp;nbsp;, ).$softWrap100$&quot;&#xA;)"/>
+												<entry key="output" value="value"/>
+												<entry key="grouping" value="key&#xA;:format(${^.created}\n${^.definition.name}\n${^.name})"/>
+												<entry key="layout" value="Matrix"/>
+											</Map>
+										</Attributes>
+									</value>
+								</entry>
+							</Map>
+						</Attributes>
+					</Rule>
+				</value>
+			</entry>
+			<entry key="show_provisioning_transaction">
+				<value>
+					<Rule language="proxy">
+						<Description>Show a single ProvisioningTransaction in the standard format</Description>
+						<Signature>
+							<Inputs>
+								<Argument name="provisioningTransactionId" type="string">
+									<Description>ProvisioningTransaction ID</Description>
+									<Prompt>ID</Prompt>
+								</Argument>
+							</Inputs>
+						</Signature>
+						<Attributes>
+							<Map>
+								<entry key="title" value="Show Provisioning Transaction"/>
+								<entry key="authorizingCapabilities" value="-- put the optional authorizing capabilities here --"/>
+								<entry key="authorizingDynamicScopes" value="-- put the optional authorizing scopes here --"/>
+								<entry key="targetRuleName" value="six_generic_query"/>
+								<entry key="targetRuleArguments">
+									<value>
+										<Attributes>
+											<Map>
+												<entry key="title" value="Show Provisioning Transaction"/>
+												<entry key="className" value="ProvisioningTransaction"/>
+												<entry key="filter" value="id == $&quot;:env(provisioningTransactionId)&quot;"/>
+												<entry key="output" value="$provisioningTransaction.columns$"/>
+												<entry key="grouping" value="applicationName&#xA;identityName:Identity:format(${displayName} (${name}))|identityName"/>
+												<entry key="layout" value="Multiple tables"/>
+											</Map>
+										</Attributes>
+									</value>
+								</entry>
+							</Map>
+						</Attributes>
+					</Rule>
+				</value>
+			</entry>
+		</Map>
+	</Attributes>
+</Configuration>

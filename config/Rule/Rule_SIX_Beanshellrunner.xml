@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_beanshellrunner">
+	<Description>Execute Beanshell code snippets</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the action executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="script" type="text">
+				<Description>Beanshell code to execute ("script" parameter)</Description>
+				<Prompt>Script</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import sailpoint.object.Rule;
+import sailpoint.object.Script;
+import sailpoint.tools.xml.AbstractXmlObject;
+
+var lines = new ArrayList();
+var scriptContext = new HashMap();
+scriptContext.put("__buffer__", lines);
+var ruleLibrary = new Rule();
+ruleLibrary.setSource("print(s) { __buffer__.add(s); }");
+if ((rulerunnerOutput != void) && (rulerunnerOutput != null))
+{
+    scriptContext.put("rulerunnerOutput", rulerunnerOutput);
+}
+
+var start = System.currentTimeMillis();
+var object = context.runScript(new Script(script), scriptContext, List.of(ruleLibrary));
+var duration = System.currentTimeMillis() - start;
+
+if ((rulerunnerOutput == void) || (rulerunnerOutput == null))
+{
+    return lines.isEmpty() ? object : lines;
+}
+
+if (!lines.isEmpty())
+{
+	rulerunnerOutput.printNoEscape("<pre>");
+	rulerunnerOutput.print(String.join("\n", lines));
+	rulerunnerOutput.printNoEscape("</pre>");
+}
+
+if (object != null)
+{
+	rulerunnerOutput.printNoEscape("<pre>");
+	rulerunnerOutput.print((object instanceof AbstractXmlObject) ?
+		object.toXml(false) :
+		object.toString()
+	);
+	rulerunnerOutput.printNoEscape("</pre>");
+}
+
+rulerunnerOutput.addMessage("%.03f seconds", duration/1000.0);
+]]></Source>
+</Rule>

@@ -1,0 +1,200 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_direct_connector_access">
+	<Description>Directly invoke operations on connected endpoints</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the action executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="application" type="string">
+				<Description>Endpoint to access. "IIQ" for role provisioning.</Description>
+				<Prompt>Application</Prompt>
+			</Argument>
+			<Argument name="operation" type="choice:Test,Iterate,Read,Provision">
+				<Description>Choose the operation to invoke on the connector</Description>
+				<Prompt>Operation</Prompt>
+			</Argument>
+			<Argument name="objectType" type="string">
+				<Description>Object type to read or write to</Description>
+				<Prompt>Object type</Prompt>
+			</Argument>
+			<Argument name="maxObjects" type="int">
+				<Description>Maximum number of objects to iterate</Description>
+				<Prompt>Iterate limit</Prompt>
+			</Argument>
+			<Argument name="nativeIdentity" type="string">
+				<Description>Account to read or write to, for account creation via the provisioning engine name of the identity.</Description>
+				<Prompt>Native identity</Prompt>
+			</Argument>
+			<Argument name="provisioningOperation" type="choice:,Create,Delete,Disable,Enable,Lock,Modify,Unlock">
+				<Description>Choose the operation to invoke on the account</Description>
+				<Prompt>Provisioning operation</Prompt>
+			</Argument>
+			<Argument name="attributeOperation" type="choice:,Add,Remove,Retain,Revoke,Set">
+				<Description>Choose the operation to invoke on the attribute</Description>
+				<Prompt>Attribute operation</Prompt>
+			</Argument>
+			<Argument name="attributeName" type="string">
+				<Description>Attribute to modify on the account</Description>
+				<Prompt>Attribute</Prompt>
+			</Argument>
+			<Argument name="attributeValue" type="string">
+				<Description>Value to submit add/remove/set the attribute to</Description>
+				<Prompt>Value</Prompt>
+			</Argument>
+			<Argument name="useProvisioner" type="boolean">
+				<Description>Submit the provisioning operation to the IIQ provisioning engine instead of the connector directly. This will cause a regular plan compile including evaluation of provisioning policies. For account creation, set the native identity to the identity name.</Description>
+				<Prompt>Use provisioning engine</Prompt>
+			</Argument>
+			<Argument name="verbose" type="boolean">
+				<Description>Show provisioning plan/project before provisioning</Description>
+				<Prompt>Verbose</Prompt>
+			</Argument>
+			<Argument name="runInBackground" type="boolean">
+				<Description>Enable for long-running iterations to get the result sent by email</Description>
+				<Prompt>Execute iterations in background</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import sailpoint.api.*;
+import sailpoint.connector.*;
+import sailpoint.object.*;
+import sailpoint.tools.xml.AbstractXmlObject;
+
+try
+{
+	var connector = "IIQ".equals(application) ? null : ConnectorFactory.getConnector(context.getObject(Application.class, application), null);
+	if ((connector == null) && !"Provision".equals(operation))
+	{
+		throw new RuntimeException("No such connector");
+	}
+	switch (operation)
+	{
+		case "Test":
+			connector.testConfiguration();
+			rulerunnerOutput.addMessage("Test successful");
+			break;
+		case "Iterate":
+			var count = 0;
+			rulerunnerOutput.startTimeMonitoring();
+			rulerunnerOutput.printNoEscape("<pre>");
+			try
+			{
+				var resultSet = connector.iterateObjects(objectType, null, null);
+				while (resultSet.hasNext())
+				{
+					if ((maxObjects != null) && (count >= maxObjects))
+					{
+						rulerunnerOutput.addMessage("Maximum object count was reached");
+						break;
+					}
+					if (rulerunnerOutput.isTerminationRequested(count == 0))
+					{
+						break;
+					}
+					rulerunnerOutput.print(resultSet.next().toXml(false));
+					++count;
+				}
+			}
+			finally
+			{
+				rulerunnerOutput.printNoEscape("</pre>");
+			}
+			rulerunnerOutput.addMessage("%d objects iterated in %.02f seconds", count, rulerunnerOutput.getDuration());
+			break;
+		case "Read":
+			var account = connector.getObject(objectType, nativeIdentity, null);
+			rulerunnerOutput.printNoEscape("<pre>");
+			rulerunnerOutput.print((account != null) ? account.toXml(false) : "null");
+			rulerunnerOutput.printNoEscape("</pre>");
+			break;
+		case "Provision":
+			var provisioningPlan = new ProvisioningPlan();
+			provisioningPlan.setSource("six_direct_connector_access");
+			var objectRequest;
+			if ("account".equals(objectType))
+			{
+				objectRequest = new ProvisioningPlan.AccountRequest(
+					ProvisioningPlan.AccountRequest.Operation.valueOf(provisioningOperation),
+					application,
+					null,
+					(useProvisioner && "Create".equals(provisioningOperation)) ? null : nativeIdentity
+				);
+			}
+			else
+			{
+				objectRequest = new ProvisioningPlan.ObjectRequest();
+				objectRequest.setOp(ProvisioningPlan.ObjectOperation.valueOf(provisioningOperation));
+				objectRequest.setApplication(application);
+				objectRequest.setType(objectType);
+				objectRequest.setNativeIdentity(nativeIdentity);
+			}
+			objectRequest.setTargetIntegration(application);
+			if (("Create".equals(provisioningOperation) || "Modify".equals(provisioningOperation)) && (attributeOperation != null) && !attributeOperation.isEmpty())
+			{
+				var attributeRequest = new ProvisioningPlan.AttributeRequest(
+						attributeName,
+						ProvisioningPlan.Operation.valueOf(attributeOperation),
+						attributeValue
+				);
+				objectRequest.add(attributeRequest);
+			}
+			provisioningPlan.add(objectRequest);
+			var provisioningResult = null;
+			if ((connector == null) || useProvisioner)
+			{
+				if ("account".equals(objectType))
+				{
+					if ((connector == null) || "Create".equals(provisioningOperation))
+					{
+						provisioningPlan.setIdentity(context.getObject(Identity.class, nativeIdentity));
+					}
+					else
+					{
+						var account = context.getUniqueObject(Link.class, Filter.and(
+							Filter.eq("application.name", application),
+							Filter.eq("nativeIdentity", nativeIdentity)
+						));
+						if (account == null)
+						{
+							throw new RuntimeException("No such account");
+						}
+						provisioningPlan.setIdentity(account.getIdentity());
+					}
+				}
+				var provisioner = new Provisioner(context);
+				var provisioningProject = provisioner.compile(provisioningPlan);
+				if (verbose)
+				{
+					rulerunnerOutput.printNoEscape("<pre>");
+					rulerunnerOutput.print(provisioningProject.toXml(false));
+					rulerunnerOutput.printNoEscape("</pre>");
+				}
+				provisioner.execute(provisioningProject);
+				provisioningResult = provisioningProject;
+			}
+			else
+			{
+				if (verbose)
+				{
+					rulerunnerOutput.printNoEscape("<pre>");
+					rulerunnerOutput.print(provisioningPlan.toXml(false));
+					rulerunnerOutput.printNoEscape("</pre>");
+				}
+				provisioningResult = connector.provision(provisioningPlan);
+			}
+			rulerunnerOutput.printNoEscape("<pre>");
+			rulerunnerOutput.print(((provisioningResult != null) ? provisioningResult : provisioningPlan).toXml(false));
+			rulerunnerOutput.printNoEscape("</pre>");
+			break;
+	}
+}
+catch (Exception e)
+{
+	rulerunnerOutput.addError(e);
+}
+]]></Source>
+</Rule>

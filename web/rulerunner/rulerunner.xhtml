@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC
+        "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:c="http://java.sun.com/jstl/core"
+      xmlns:h="http://java.sun.com/jsf/html">
+<body>
+
+<ui:composition template="/appPage.xhtml">
+
+    <ui:define name="title">#{rulerunner.title}</ui:define>
+    <ui:define name="headerItems">
+        <link href="rulerunner.css" rel="stylesheet" type="text/css"/>
+        <script type="text/javascript">
+            SailPoint.disableExtSessionDialogs = true;
+
+            window.addEventListener("DOMContentLoaded", function() {
+                const runImmediate = #{rulerunner.runImmediate};
+                if (runImmediate) {
+                    const executeButton = document.getElementById("argumentsForm:executeButton");
+                    executeButton.click();
+                }
+                else {
+                    const argumentsForm = document.getElementById( "argumentsForm" );
+                    argumentsForm.style.display = null;
+                }
+            });
+
+            function formatWaitingMessage(isDownload) {
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                const message = isDownload ? "Download requested" : "Executing...";
+
+                return `[\${year}-\${month}-\${day} \${hours}:\${minutes}:\${seconds}] \${message}`;
+            }
+
+            function assimilateForm() {
+                const titleInput = document.getElementById( "argumentsForm:title" );
+                let title = (titleInput == null) ? document.getElementById("bodyDivTitle").firstChild.nextSibling.innerText : titleInput.value;
+                if (title === "") {
+                    title = document.getElementById("argumentsForm:rule").value;
+                }
+                document.title = title;
+                document.getElementById("bodyDivTitle").firstChild.nextSibling.innerText = title;
+                const bookmark = document.getElementById( "bookmark" );
+                const link = document.getElementById( "argumentsForm:link" );
+                const bookmarkParams = new FormData();
+                const linkParams = new FormData();
+                const rawData = new FormData(document.getElementById( "argumentsForm" ));
+                for (let [name, value] of rawData) {
+                    if (name.startsWith("argumentsForm:") &amp;&amp; (name !== "argumentsForm:link") &amp;&amp; (value !== "")) {
+                        bookmarkParams.append(name.substring(14), encodeURIComponent(value).replaceAll("'", "%27"));
+                        linkParams.append(name.substring(14), value);
+                    }
+                }
+                let params = new URLSearchParams(document.location.search);
+                if (params.get("runImmediate") === "on") {
+                    bookmarkParams.append("runImmediate", "on");
+                    linkParams.append("runImmediate", "on");
+                }
+                bookmark.text = title;
+                bookmark.href = "javascript:void(window.open(location.origin+'" + location.pathname + "?" + new URLSearchParams(bookmarkParams) + "'))";
+                link.value = location.origin + location.pathname + "?" + new URLSearchParams(linkParams);
+                window.history.pushState({}, '', link.value);
+                let isDownload = false;
+                const backgroundToggle = document.getElementById( "argumentsForm:runInBackground" );
+                if ((backgroundToggle == null) || !backgroundToggle.checked) {
+                    const downloadControl = document.getElementById( "argumentsForm:download" );
+                    if ((downloadControl != null) &amp;&amp; ((downloadControl.type === "checkbox") ? downloadControl.checked : downloadControl.value)) {
+                        isDownload = true;
+                    }
+                }
+                if (isDownload) {
+                    document.getElementById( "argumentsForm:downloadButton" ).click();
+                }
+                const outputPane = document.getElementById( "outputPane" );
+                outputPane.innerHTML = formatWaitingMessage(isDownload);
+                const executeButton = document.getElementById( "argumentsForm:executeButton" );
+                executeButton.scrollIntoView();
+                return !isDownload;
+            }
+        </script>
+    </ui:define>
+
+    <ui:define name="body">
+        <f:view>
+            <h:form styleClass="form" style="display: none;" id="argumentsForm" rendered="#{rulerunner.rule != null}">
+                <h:inputHidden id="rule" value="#{rulerunner.rule}"/>
+                <h:inputHidden id="link" value="#{rulerunner.link}"/>
+
+                <table id="arguments" class="argumentsTable">
+                    <c:forEach var="argument" items="#{rulerunner.arguments}">
+                        <tr>
+                            <td>
+                                <h:outputText value="#{argument.label}"/>
+                            </td>
+                            <td><h:graphicImage id="imgHlpTaskDef#{argument.name}"
+                                                rendered="#{argument.helpText != null}" styleClass="helpIcon"
+                                                url="/images/icons/dashboard_help_16.png"
+                                                alt="#{argument.helpText}"/>
+                            </td>
+                            <td>
+                                <c:choose>
+                                    <c:when test="#{argument.type eq 'string'}">
+                                        <h:inputText id="#{argument.name}" size="100" value="#{argument.value}"/>
+                                    </c:when>
+                                    <c:when test="#{(argument.type eq 'text')}">
+                                        <h:inputTextarea id="#{argument.name}" rows="3" cols="100" value="#{argument.value}"/>
+                                    </c:when>
+                                    <c:when test="#{argument.type eq 'int'}">
+                                        <h:inputText id="#{argument.name}" size="6" value="#{argument.value}"/>
+                                    </c:when>
+                                    <c:when test="#{argument.type eq 'date'}">
+                                        <h:inputText id="#{argument.name}" size="25" value="#{argument.value}"/>
+                                    </c:when>
+                                    <c:when test="#{argument.type eq 'boolean'}">
+                                        <h:selectBooleanCheckbox id="#{argument.name}" value="#{argument.value}"/>
+                                    </c:when>
+                                    <c:when test="#{argument.type eq 'choice'}">
+                                        <h:selectOneMenu id="#{argument.name}" value="#{argument.value}">
+                                            <f:selectItems value="#{argument.choices}" var="entry" itemLabel="#{entry[1]}" itemValue="#{entry[0]}"/>
+                                        </h:selectOneMenu>
+                                    </c:when>
+                                </c:choose>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                </table>
+
+                <div class="buttonRow">
+                    <h:commandButton id="executeButton" value="Execute" onclick="return assimilateForm()" styleClass="primaryBtn">
+                        <f:ajax execute="@form" render="outputPane"/>
+                    </h:commandButton>
+                    <h:commandButton id="downloadButton" style="display: none" action="#{rulerunner.getDownload}"/>
+                    <a id="bookmark" title="Drag this link to your browser bookmarks"/>
+                </div>
+
+            </h:form>
+
+            <div class="rulerunnerOutput">
+                <h:outputText id="outputPane" escape="false" value="#{rulerunner.output}"/>
+            </div>
+        </f:view>
+    </ui:define>
+
+</ui:composition>
+
+</body>
+</html>

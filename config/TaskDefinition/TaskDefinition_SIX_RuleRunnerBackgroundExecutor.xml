@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE TaskDefinition PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<TaskDefinition concurrent="true" executor="com.six.iam.iiq.rulerunner.RulerunnerBackgroundTaskExecutor" name="SIX RuleRunnerBackgroundExecutor" resultAction="Rename" template="true" type="Generic">
+	<Description>Task for Rule Runner background execution</Description>
+	<Signature>
+		<Returns>
+			<Argument name="title" type="string">
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="link" type="string">
+				<Prompt>Link</Prompt>
+			</Argument>
+		</Returns>
+	</Signature>
+</TaskDefinition>

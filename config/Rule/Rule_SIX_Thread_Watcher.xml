@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="javanative" name="six_thread_watcher">
+	<Description>Poor man's JVM profiler</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the capture executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="threadSelectorPatterns" type="string">
+				<Description>Regular expression to select threads to be watched by name, optionally followed (separated by space) by regular expression to select by stack frame label. Default: all threads. Example: . ^six</Description>
+				<Prompt>Thread selector</Prompt>
+			</Argument>
+			<Argument name="sampleInterval" type="int">
+				<Description>Sample interval in milliseconds. Default: 20</Description>
+				<Prompt>Sample interval</Prompt>
+			</Argument>
+			<Argument name="sampleCount" type="int">
+				<Description>Number of samples to take. Default: 100</Description>
+				<Prompt>Sample count</Prompt>
+			</Argument>
+			<Argument name="aggregationPattern" type="string">
+				<Description>Regular expression to select stack frames to compute aggregated results for. Example: XMLObjectFactory:toXml</Description>
+				<Prompt>Aggregation selector</Prompt>
+			</Argument>
+			<Argument name="suspendPattern" type="string">
+				<Description>Regular expression to suppress details below stack frame. Example: ^java</Description>
+				<Prompt>Suspend filter</Prompt>
+			</Argument>
+			<Argument name="resumePattern" type="string">
+				<Description>Regular expression to re-enable details at stack frame. Example: ^six|^sailpoint</Description>
+				<Prompt>Resume filter</Prompt>
+			</Argument>
+			<Argument name="runTop" type="boolean">
+				<Description>Include the output of top -H into the report</Description>
+				<Prompt>Run 'top'</Prompt>
+			</Argument>
+			<Argument name="runJmap" type="boolean">
+				<Description>Include the output of jmap -histo:live into the report</Description>
+				<Prompt>Run 'jmap'</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source>com.six.iam.iiq.rulerunner.rules.ThreadWatcher</Source>
+</Rule>

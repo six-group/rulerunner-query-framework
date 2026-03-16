@@ -1,0 +1,251 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="six_log_configurator">
+	<Description>Change the log4j2 runtime configuration in memory</Description>
+	<Signature>
+		<Inputs>
+			<Argument name="title" type="string">
+				<Description>Descriptive name for the action executed upon submitting this form (metaparameter)</Description>
+				<Prompt>Title</Prompt>
+			</Argument>
+			<Argument name="operation" type="choice:List appenders,List configured loggers,List all loggers,Create appender,Install appender,Uninstall appender,Shutdown appender,Get log level,Set log level,Test appender,Test core logger,Test logger">
+				<Description>Choose the operation to execute</Description>
+				<Prompt>Operation</Prompt>
+			</Argument>
+			<Argument name="appenderName" type="string">
+				<Description>Name of appender. Needs to start with # to create and shutdown appender.</Description>
+				<Prompt>Appender</Prompt>
+			</Argument>
+			<Argument name="loggerName" type="string">
+				<Description>Name of logger. Default: Root logger</Description>
+				<Prompt>Logger</Prompt>
+			</Argument>
+			<Argument name="logLevel" type="choice:,FATAL,ERROR,WARN,INFO,DEBUG,TRACE">
+				<Description>Log level to set or to log with. Default: DEBUG</Description>
+				<Prompt>Log level</Prompt>
+			</Argument>
+		</Inputs>
+	</Signature>
+	<Source><![CDATA[
+import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.message.SimpleMessage;
+
+// prepare output
+rulerunnerOutput.printNoEscape("<pre>");
+
+var ctx = LogManager.getContext(false);
+var config = ctx.getConfiguration();
+var appender = ((appenderName != void) && (appenderName != null) && !appenderName.isEmpty()) ? config.getAppenders().get(appenderName) : null;
+var logger = ((loggerName != void) && (loggerName != null) && !loggerName.isEmpty()) ? Logger.getLogger(loggerName) : Logger.getRootLogger();
+var level = ((logLevel != void) && (logLevel != null) && !logLevel.isEmpty()) ? logLevel : Level.DEBUG;
+
+switch (operation)
+{
+	case "List appenders":
+	{
+		var crossreference = new HashMap();
+		for (var loggerConfig: config.getLoggers().values())
+		{
+			for (var appenderName: loggerConfig.getAppenders().keySet())
+			{
+				var bucket = crossreference.get(appenderName);
+				if (bucket == null)
+				{
+					bucket = new ArrayList();
+					crossreference.put(appenderName, bucket);
+				}
+				bucket.add(loggerConfig.getName().isEmpty() ? "rootLogger" : loggerConfig.getName());
+			}
+		}
+		for (var appender: new TreeMap(config.getAppenders()).values()) {
+			var references = crossreference.get(appender.getName());
+			rulerunnerOutput.print("%s = %s %s%s\n",
+				appender.getName(),
+				appender.getClass().getSimpleName(),
+				(references != null) ? references.toString() : "-- unused --",
+				((appender instanceof FileAppender) || (appender instanceof RollingFileAppender)) ? " -> " + appender.getFileName() : ""
+			);
+		}
+		break;
+	}
+	case "List configured loggers":
+	case "List all loggers":
+	{
+		var isConfiguredLoggers = "List configured loggers".equals(operation);
+		var roots = new TreeMap();
+		var children = new HashMap();
+		for (var loggerConfigOrLogger: isConfiguredLoggers ? config.getLoggers().values() : ctx.getLoggers()) {
+			var parent = loggerConfigOrLogger.getParent();
+			if ((parent == null) || !loggerConfigOrLogger.isAdditive())
+			{
+				roots.put(loggerConfigOrLogger.getName(), loggerConfigOrLogger);
+			}
+			else
+			{
+				var bucket = children.get(parent.getName());
+				if (bucket == null)
+				{
+					bucket = new TreeMap();
+					children.put(parent.getName(), bucket);
+				}
+				bucket.put(loggerConfigOrLogger.getName(), loggerConfigOrLogger);
+			}
+		}
+		var stack = new ArrayList();
+		var iterator = roots.values().iterator();
+		while (true)
+		{
+			if (!iterator.hasNext())
+			{
+				if (stack.isEmpty())
+				{
+					break;
+				}
+				iterator = stack.remove(stack.size() - 1);
+				continue;
+			}
+			var loggerConfigOrLogger = iterator.next();
+			var name = loggerConfigOrLogger.getName();
+			var level = isConfiguredLoggers ?
+				String.format("%s/%s", loggerConfigOrLogger.getLevel(), LogManager.getLogger(name).getLevel()) :
+				loggerConfigOrLogger.getLevel();
+			if (name.isEmpty())
+			{
+				name = "rootLogger";
+			}
+			rulerunnerOutput.print("%s%s (%s) -> %s\n", "  ".repeat(stack.size()), name, level, loggerConfigOrLogger.getAppenders().keySet());
+			if (children.containsKey(loggerConfigOrLogger.getName()))
+			{
+				stack.add(iterator);
+				iterator = children.get(loggerConfigOrLogger.getName()).values().iterator();
+			}
+		}
+		break;
+	}
+	case "Create appender":
+	{
+		if ((appender != null) || (appenderName == void) || (appenderName == null) || !appenderName.matches("#[-_.A-Za-z0-9]+"))
+		{
+			throw new RuntimeException("Invalid appender name");
+		}
+		var iiqAppender = config.getAppender("iiq");
+		if (iiqAppender == null)
+		{
+			throw new RuntimeException("Appender 'iiq' not found");
+		}
+		var layout = iiqAppender.getLayout();
+		var logfile = new File(new File(iiqAppender.getFileName()).getParentFile(), appenderName.substring(1) + ".log").getAbsolutePath();
+        appender = FileAppender.newBuilder()
+        	.withFileName(logfile)
+        	.withAppend(true)
+        	.setLayout(layout)
+        	.setName(appenderName)
+        	.build();
+        appender.start();
+        config.addAppender(appender);
+		rulerunnerOutput.print("appender created writing to %s", logfile);
+        break;
+	}
+	case "Install appender":
+	{
+		if (appender == null)
+		{
+			throw new RuntimeException("No such appender");
+		}
+		logger = LogManager.getLogger(logger.getName());
+		if (logger.getAppenders().containsKey(appender.getName()))
+		{
+			throw new RuntimeException("Already installed");
+		}
+		logger.addAppender(appender);
+		rulerunnerOutput.print("appender added");
+		break;
+	}
+	case "Uninstall appender":
+	{
+		if (appender == null)
+		{
+			throw new RuntimeException("No such appender");
+		}
+		logger = LogManager.getLogger(logger.getName());
+		if (!logger.getAppenders().containsKey(appender.getName()))
+		{
+			throw new RuntimeException("Not installed");
+		}
+		logger.removeAppender(appender);
+		rulerunnerOutput.print("appender removed");
+		break;
+	}
+	case "Shutdown appender":
+	{
+		if ((appender == null) || !appenderName.matches("#[-_.A-Za-z0-9]+"))
+		{
+			throw new RuntimeException("Invalid appender name");
+		}
+		for (var loggerConfig: config.getLoggers().values())
+		{
+			if (loggerConfig.getAppenders().containsKey(appender.getName()))
+			{
+				loggerConfig.removeAppender(appender.getName());
+				rulerunnerOutput.print("removed appender from %s\n", loggerConfig.getName());
+			}
+		}
+		appender.stop();
+        config.removeAppender(appender.getName());
+		rulerunnerOutput.print("appender shutdown complete");
+		break;
+	}
+	case "Get log level":
+	{
+		rulerunnerOutput.print(logger.getLevel().toString());
+		break;
+	}
+	case "Set log level":
+	{
+		logger.setLevel(org.apache.log4j.Level.toLevel(level.toString()));
+		rulerunnerOutput.print(logger.getLevel().toString());
+		break;
+	}
+	case "Test appender":
+	{
+		if (appender == null)
+		{
+			throw new RuntimeException("No such appender");
+		}
+		var message = Log4jLogEvent.newBuilder()
+			.setLoggerName("none")
+			.setLevel(level)
+			.setThreadName(Thread.currentThread().getName())
+			.setSource(new StackTraceElement("six_configure_logging", "testAppender()", "six_configure_logging.xml", -1))
+			.setMessage(new SimpleMessage(String.format("Hello appender %s!", appender.getName())))
+			.build();
+		appender.append(message);
+		rulerunnerOutput.print("[%tF %1$tT] %s", new Date(), message);
+		break;
+	}
+	case "Test core logger":
+	{
+		logger = LogManager.getLogger(logger.getName());
+		var message = String.format("Hello logger %s!", logger.getClass().getName());
+		logger.log(level, message);
+		rulerunnerOutput.print("[%tF %1$tT] %s", new Date(), message);
+		break;
+	}
+	case "Test logger":
+	{
+		var message = String.format("Hello logger %s!", logger.getClass().getName());
+		logger.log(org.apache.log4j.Level.toLevel(level.toString()), message);
+		rulerunnerOutput.print("[%tF %1$tT] %s", new Date(), message);
+		break;
+	}
+}
+
+rulerunnerOutput.printNoEscape("</pre>");
+]]></Source>
+</Rule>

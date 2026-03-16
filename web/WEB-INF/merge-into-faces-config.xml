@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_2.xsd"
+              metadata-complete="true"
+              version="2.2">
+
+  <!--  ***************************************************** -->
+  <!--  Rule Runner                                           -->
+  <!--  ***************************************************** -->
+
+  <managed-bean>
+    <description>Rule Runner Bean</description>
+    <managed-bean-name>rulerunner</managed-bean-name>
+    <managed-bean-class>
+      com.six.iam.iiq.rulerunner.RuleRunnerBean
+    </managed-bean-class>
+    <managed-bean-scope>request</managed-bean-scope>
+  </managed-bean>
+
+</faces-config>
