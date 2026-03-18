@@ -92,12 +92,12 @@ What you will find in the package:
   * The Beanshell Runner – a small tool to run Beanshell snippets on the
     application server for development and prototyping purposes
   * Rules for interactive and batch testing of application connector
-    functionality
+    functionality and other tasks
 * A small but powerful framework with no external dependencies that provides
   the basis for these tools and many other possible applications:
   * QueryHelper – a thin wrapper around the SailpointContext search() methods
     that simplifies programming by giving direct access to extended attributes
-    and returning records as Map<String, Object> instead of Object[]
+    and returning records as `Map<String, Object>` instead of `Object[]`
   * IndexedData and TabularData - utility classes for working with in-memory
     indexed data and tabular data
   * CerberusLogic - a lightweight business rules engine using a simple syntax
@@ -111,16 +111,24 @@ What you will find in the package:
 
 The repository is located at
 https://github.com/six-group/rulerunner-query-framework.
+The project does *not* include a build to produce artefacts to be referenced
+from other projects. Instead, it hosts code to be *integrated* into
+*existing* SSB projects.
+
+The code was *intentionally* not encapsulated as a plugin since this would
+prevent using the framework in backend code.
+
+To integrate the framework into your IIQ installation, proceed as follows:
 
 * Copy the config, src, test and web directories into your SSB project.
-* Merge the bean definition from web/WEB-INF/merge-into-faces-config.xml
-  into your faces-config.xml. If you don't yet have one, copy it from the
-  extracted WAS file (make sure to update with every IIQ release). Delete
-  merge-into-faces-config.xml when finished.
+* Merge the bean definition from `web/WEB-INF/merge-into-faces-config.xml`
+  into your `faces-config.xml`. If you don't yet have one, copy it from the
+  extracted WAR file (make sure from then on to update with every IIQ release).
+  Delete `merge-into-faces-config.xml` when finished.
 * The SSB will now include the framework into your deployment. Test the
-  installation by going to this link (replace the hostname according to
+  installation by going to the following link (replace the hostname according to
   your setup and be sure you have the SystemAdministrator capability):
-  https://iam.localdomain.com/identityiq/rulerunner/rulerunner.jsf?rule=six_generic_query&className=Identity&filter=name+%3D%3D+%24%22%3Aenv%28username%29%22&output=user%3D%24toAugmentedName%24%0Aroles%3DassignedRoles%3Amap%28%24toAugmentedName%24%29%3Asort%3Ajoin 
+  [Test the installation](https://iam.localdomain.com/identityiq/rulerunner/rulerunner.jsf?rule=six_generic_query&className=Identity&filter=name+%3D%3D+%24%22%3Aenv%28username%29%22&output=user%3D%24toAugmentedName%24%0Aroles%3DassignedRoles%3Amap%28%24toAugmentedName%24%29%3Asort%3Ajoin) 
 
 Consult the TODO file and the documentation in the doc directory.
 

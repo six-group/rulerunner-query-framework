@@ -1,0 +1,165 @@
+<p>As you gradually find your feet with the object query framework, you will more and more get the impression that you can work wonders using it. To see what types of queries are possible using CerberusLogic in conjunction with the OrionQL, in this section we will look at a non-trivial real life example.</p><h1 id="AHeavyweightExample-Problemstatement">Problem statement</h1><p>The problem to solve is as follows: Due to some software malfunction, the processing of role orders sometimes ended in the entitlements being assigned to the identity but the corresponding role not, causing the entitlements to be flagged as additional entitlements.</p><p>To clean up this inconsistency, we need to identify all IdentityRequests and the roles they assigned that are affected by this problem. The corresponding query would have, for every IdentityRequest in scope, to</p><ol><li>check for all roles that were assigned to the identity by it</li><li>if the role is currently <em>not</em> assigned to the identity</li><li>and wasn't withdrawn by a later IdentityRequest</li><li>and entitlements granted by it are reported on the identity as additional entitlements.</li></ol><h1 id="AHeavyweightExample-Solution">Solution</h1><p>As with any use of CerberusLogic, the DSL doesn't do the query itself but only provides a notation for the checks to be done on the objects examined by the query to identify the sought-after ones. It is always embedded into a piece of program code that feeds the objects to it and takes back the result. In the case at hand, the code has to examine and feed to the rule evaluation IdentityRequests and the role assignments made by them.</p><p>When examining the objects, it can take advantage of the two-phase evaluation schema for CerberusLogic rule sets and map the master-detail relationship in the data to it: The master object (which is the IdentityRequest) will be used for rule selection, while the child objects (the AttributeRequests) are given to the second phase where the decisions are made. This allows to skip the iteration over the child objects entirely when the master object doesn't meet the required conditions. It will become clear how this works in a minute.</p><p>Let's assume that the selection for the IdentityRequests to examine has already been done somehow in the application code and see how the conditions to check can be expressed as an CerberusLogic rule. Before beginning, here is again how to get at the AttributeRequests reflecting the role assignments/deassignments out of an IdentityRequest (we have discussed it <a href="/spaces/OCA/pages/218112777/A+Gentle+Introduction+to+OrionQL+Expressions#AGentleIntroductiontoOrionQLExpressions-Parentreferences">here</a>):</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">provisionedProject.iiqAccountRequest.attributeRequests</pre>
+</div></div><p>In the rule below this is the parameter <code>collectionAttribute</code>.</p><div role="region" aria-label="Info" class="confluence-information-macro confluence-information-macro-information conf-macro output-block" data-hasbody="true" data-macro-name="info"><span role="presentation" class="aui-icon aui-icon-small aui-iconfont-info-filled confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>To also recap at this point from <a href="/spaces/OCA/pages/218112777/A+Gentle+Introduction+to+OrionQL+Expressions#AGentleIntroductiontoOrionQLExpressions-TheobjectsIneedarespreadoverawholehierarchyofobjects!">here</a>, this is how we get a list of all entitlements (formatted as <code><em>application</em>::<em>attribute</em>::<em>value</em></code>) granted by a role:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">:flatten(flattenedRequirements#profiles#constraints#value):map(:format(${^.^.application.name}::${^.property}::${@}))</pre>
+</div></div></div></div><p>After the IdentityRequest has passed the rule selection condition, <em>only then</em> the application code will perform this access and iterate over the AttributeRequests to pass them to the rule engine for evaluation. For the curious one how this would look like in code, here is a rule that performs the query. To avoid having String literals containing DSL code with double and triple quoting, all parameters were moved to the attributes map of the rule, having it read itself from the database upon start to load the attributes mapping. This turns, at the same time, the rule into a <em>generic</em> query:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: xml; gutter: true">&lt;Rule language=&quot;beanshell&quot; name=&quot;generic_query&quot;&gt;
+	&lt;Attributes&gt;
+		&lt;Map&gt;
+			&lt;entry key=&quot;objectClass&quot; value=&quot;...&quot;/&gt;
+			&lt;entry key=&quot;filter&quot;&gt;&lt;value&gt;&lt;String&gt;&lt;![CDATA[...]]&gt;&lt;/String&gt;&lt;/value&gt;&lt;/entry&gt;
+			&lt;entry key=&quot;collectionAttribute&quot; value=&quot;...&quot;/&gt;
+			&lt;entry key=&quot;selectionRules&quot;&gt;&lt;value&gt;&lt;Script language=&quot;beanshell&quot;&gt;&lt;Source&gt;&lt;![CDATA[...]]&gt;&lt;/Source&gt;&lt;/Script&gt;&lt;/value&gt;&lt;/entry&gt;
+			&lt;entry key=&quot;format&quot;&gt;&lt;value&gt;&lt;String&gt;&lt;![CDATA[...]]&gt;&lt;/String&gt;&lt;/value&gt;&lt;/entry&gt;
+		&lt;/Map&gt;
+	&lt;/Attributes&gt;
+	&lt;Source&gt;&lt;![CDATA[
+import com.six.iam.util.IndexedData;
+import com.six.iam.util.CerberusLogic;
+import com.six.iam.util.OrionQL;
+import com.six.iam.util.QueryHelper;
+import com.six.iam.util.TabularData;
+
+import sailpoint.object.*;
+
+var parameters = context.getObject(Rule.class, &quot;generic_query&quot;).getAttributes();
+
+var start = System.currentTimeMillis();
+
+var baseProxy = OrionQL.wrap(null, context).setFormat(parameters.get(&quot;format&quot;));
+var selectionRules = CerberusLogic.compile(parameters.get(&quot;selectionRules&quot;).getSource(), null, context);
+
+var resultSet = context.search(
+	Class.forName(&quot;sailpoint.object.&quot; + parameters.get(&quot;objectClass&quot;)),
+	new QueryOptions().addFilter(Filter.compile(parameters.get(&quot;filter&quot;)))
+);
+var count = 0;
+var hits = 0;
+var runtime = Runtime.getRuntime();
+while (resultSet.hasNext())
+{
+	if ((count % 1000) == 0)
+	{
+		baseProxy.clearCache();
+		context.decache();
+	}
+	if ((count++ % 100) == 0)
+	{
+		System.out.print(String.format(&quot;\n*** %.3f MB\n&quot;, (runtime.totalMemory() - runtime.freeMemory()) / 1048576.));
+	}
+	var proxy = baseProxy.derive(resultSet.next());
+	var selectedRules = selectionRules.select(proxy);
+	if (selectedRules == null)
+	{
+		System.out.print(&quot;-&quot;);
+		continue;
+	}
+	var collection = proxy.access(parameters.get(&quot;collectionAttribute&quot;));
+	if (collection == null)
+	{
+		System.out.print(&quot;.&quot;);
+		continue;
+	}
+	System.out.print(&quot;+&quot;);
+	for (var collectionElement: collection)
+	{
+		var child = proxy.derive(collectionElement);
+		if (selectedRules.approve(child) != null)
+		{
+			++hits;
+			print(&quot;&quot;);
+			print(child);
+		}
+	}
+}
+
+print(String.format(&quot;\n%d objects checked in %.3f seconds, %d hits&quot;, count, (System.currentTimeMillis()-start)/1000., hits));
+]]&gt;&lt;/Source&gt;
+&lt;/Rule&gt;</pre>
+</div></div><p>You may have noticed that within the loop we regularly clear the Hibernate as well as the query framework's cache since otherwise we might quickly run out of memory.</p><h2 id="AHeavyweightExample-Theselectionrule">The selection rule</h2><p>The following DSL code implements the selection condition outlined in the section <a href="#AHeavyweightExample-Problemstatement">Problem statement</a> above. To ease understanding, the objects being checked at every level are indicated in square brackets and every check is preceded by an explaining comment:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">IdentityRequest(
+    // [IdentityRequest]
+    // the IdentityRequest's target identity still exists
+	ne( &quot;targetId:Identity&quot;, null )
+).accept(
+	// [AttributeRequest]
+    // the request is a role add operation
+    eq( &quot;op&quot;, &quot;Add&quot; ),
+    // the bundle still exists
+	ne( &quot;value:Bundle&quot;, null ),
+    // the role is no more assigned to the identity
+	notin( &quot;value&quot;, &quot;^.targetId:Identity.assignedRoles:map(name)&quot; ),
+    // there are no IdentityRequests created after this one ...
+	none( &quot;:IdentityRequest([targetId == $\&quot;^.targetId\&quot; &amp;&amp; created &gt; $\&quot;^.created\&quot;])&quot;,
+        // [IdentityRequest]
+        // ... that contain an AttributeRequest ...
+		any( &quot;provisionedProject.iiqAccountRequest.attributeRequests&quot;,
+            // [AttributeRequest]
+            // ... that removed ...
+			eq( &quot;op&quot;, &quot;Remove&quot;, &quot;Revoke&quot; ),
+            // ... the role we are looking at
+			eq( &quot;value&quot;, ref( &quot;^.^.value&quot; ) )
+		)
+	),
+    // any of the role's entitlements ...
+	any( &quot;value:Bundle:flatten(flattenedRequirements#profiles#constraints#value):map(:format(${^.^.application.name}::${^.property}::${@}))&quot;,
+        // [bundle entitlement formatted as string &quot;application::attribute::value&quot;]
+        // ... is reported as additional entitlement
+		in( &quot;@&quot;, &quot;:cache(${^.^.targetId}.additionalEntitlements,:IdentityEntitlement([identity.id==$\&quot;^.^.targetId\&quot; &amp;&amp; grantedByRole==false]):map(:format(${appName}::${name}::${value})))&quot; )
+	)
+);</pre>
+</div></div><p>The above code has not been tested yet. This is left as an exercise to the reader 😉.</p><div role="region" aria-label="Info" class="confluence-information-macro confluence-information-macro-information conf-macro output-block" data-hasbody="true" data-macro-name="info"><p class="title conf-macro-render">How to test?</p><span role="presentation" class="aui-icon aui-icon-small aui-iconfont-info-filled confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>When writing CerberusLogic rules, it may be demanding to get the checks right, including all attribute names and parent navigations. Due to the flexibility the DSL offers, it has fewer possibilities to detect errors than you might wish. For instance, misspelled attribute names or even hitting the wrong object during parent navigation might hide by the attributes queried being interpreted as extended attributes (if the object class <em>has</em> extended attributes, but most <em>do</em>), simply returning <code>null</code> instead of an error. Often, when a query for some exotic condition does not return a result, there are two possible reasons - the condition is not present in the data or the query is incorrect.</p><p>You can use the following strategies to make sure your queries do what you intended:</p><ul><li>Before using an expression for a selection criteria, add it as output and check if the result is what you expect.</li><li>Invert the condition examining the expression and check the effect.</li></ul></div></div><p>Some considerations:</p><ul><li>The identity existence check on line 4 loads the identity object. While this is more expensive than loading a single attribute only or counting, we did this since we'll need the identity object anyway with high probability on line 12, and doing an existence check upfront would mean to do an additional database access (note that all query results are automatically cached). Similar considerations apply to the bundle existence check on line 10 - the bundle will be used with high probability on line 26.</li><li>Line 14 loads, for every IdentityRequest, a list of all more recent identity requests. It would be more performant however if we loaded the complete list of IdentityRequests specified by the top level <code>filter</code> condition on first access and added a selector so the IdentityRequest's condition checking its creation timestamp against that of the grandparent IdentityRequest. For this, we would need a greater-than selector which hasn't been implemented yet.</li><li>The <code>:map()</code> instruction on line 12 creates from the list of the identity's assigned roles a list of their names and is invoked for <em>every</em> AttributeRequest of <em>every</em> IdentityRequest of an identity. This waste of computing power could be avoided by either caching the list or by omitting the <code>:map()</code> operation and providing <code>value:Bundle</code> to the check instead of <code>value</code>. Since the Bundle was already loaded and its <code>equals()</code> method compares by ID or name, this will be a viable and more performant solution despite it looks as if it would cause an expensive database access.</li><li>In line 26 we compute the entitlements granted by the role assigned by the attribute request. We do this every time we got past all previous checks when checking an attribute request. There is a certain probability we do this computation for the same Bundle again when checking the identity requests in the main selection. However, the additional complexity of adding a <code>:cache()</code> directive is probably not worth the gain.</li><li>In line 29 there is a higher probability that the <code>:cache()</code> directive has a measurable effect since the identity's additional entitlements will be needed more often. However, since the result of the database query is cached anyway, only the overhead of the mapping operation is saved, so the complexity introduced by the <code>:cache()</code> directive probably does not pay off. You are welcomed to test this - at least now you have seen it in use.</li></ul><div role="region" aria-label="Info" class="confluence-information-macro confluence-information-macro-information conf-macro output-block" data-hasbody="true" data-macro-name="info"><p class="title conf-macro-render">Checking the detected roles</p><span role="presentation" class="aui-icon aui-icon-small aui-iconfont-info-filled confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>If entitlement roles were detected <em>unconditionally</em> instead of only <em>when assigned</em>, they would reflect the additional entitlements. Since the entitlement roles to be assigned by a role are directly available via the IIQ API from it as <code>flattenedRequirements</code>, this would simplify the check done in lines 26-30 since there would be no object hierarchy to traverse for determining the entitlements to check against the additional entitlements:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true; first-line: 25">	// any of the role's required roles ...
+	any( &quot;value:Bundle.flattenedRequirements&quot;,
+		// [required role]
+		// ... is reported as additional entitlement
+		in( &quot;@&quot;, &quot;:IdentityEntitlement([identity.id==$\&quot;^.^.targetId\&quot; &amp;&amp; name==\&quot;detectedRoles\&quot; &amp;&amp; grantedByRole==false])&quot; )
+	)</pre>
+</div></div><p>I didn't check if this works. It would require the <code>grantedByRole</code> attribute to be set by IIQ also for detected roles. Alternatively, we could check the detected roles directly, doing the computation for additional detected roles ourselves by discarding all detected roles that are required by some role the identity has:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true; first-line: 25">	// any of the role's required roles ...
+ 	any( &quot;value:Bundle.flattenedRequirements&quot;,
+ 		// [required role]
+		// ... is detected and ...
+		in( &quot;@&quot;, &quot;^.^.targetId:Identity.detectedRoles&quot; ),
+		// ... not required by some role the identity has
+		notin( &quot;@&quot;, &quot;^.^.targetId:Identity:flatten(assignedRoles#flattenedRequirements)&quot; )
+	)</pre>
+</div></div><p>Often, different strategies exist to check for the same condition.</p></div></div><div role="region" aria-label="Info" class="confluence-information-macro confluence-information-macro-information conf-macro output-block" data-hasbody="true" data-macro-name="info"><p class="title conf-macro-render">Testing for data inconsistencies</p><span role="presentation" class="aui-icon aui-icon-small aui-iconfont-info-filled confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>This may become sort of a hobby for you: When data is stored redundantly, there are not only multiple ways to query for the same information, raising the question, which one is the best to use, but they also raise the question if they would deliver the same results. So, while working on some query and gradually getting deeper into the CerberusLogic/OrionQL duo and the subtleties of the IIQ data model, expect many ideas to come up about what other interesting checks could also be performed. The powerful query capabilities now at your dispositon make the previously unthinkable possible. And, as data quality is always important, pursuing such options can make quite a distinction.</p></div></div><h2 id="AHeavyweightExample-Generatingtheoutput">Generating the output</h2><p>After a finding - that is, a role assignment that was lost but the entitlement assigned - has been determined, some suitable output has to be generated. CSV generation would be easy to accomplish using the <code>TabularData</code> class, but for this analysis we settle for simple text output to the console. To be able to validate the result of our query, beyond the naked finding we also provide some additional information.</p><p>The text output can be very easily generated by defining a <a href="/spaces/OCA/pages/218112777/A+Gentle+Introduction+to+OrionQL+Expressions#AGentleIntroductiontoOrionQLExpressions-Objectformatting">formatting template</a> for the attribute request object (which is the child object of the query; if you look at the Rule code above you see that the format is set only once on the base proxy - it is inherited down the hierarchy).</p><p>Since we have a lot of information, we use a multiline format. This can be easily reflected in the template. The following is a possible variant:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">${%tF,^.created} ${^.id} ${^.targetId:Identity.name} ${^.executionStatus} fullyCommitted=${^.provisionedProject.fullyCommitted} ${^.messages}
+${op} ${value}
+${:IdentityRequest([targetId == $&quot;^.targetId&quot; &amp;&amp; created &gt; $&quot;^.created&quot;]):map(:format( ${id}|${%tF,created}|${executionStatus}|${provisionedProject.iiqAccountRequest.attributeRequests:map(:format(${op}=${value})):join(:)})):join}
+assigned = ${^.targetId:Identity.assignedRoles:map(name)}
+detected = ${^.targetId:Identity.detectedRoles:map(name)}</pre>
+</div></div><p>What this formatting template does is best illustrated by an example output.</p><ol><li>The first line shows the IdentityRequest (the parent of the AttributeRequest) with creation date, ID, target identity name, execution status, fully committed status and any messages it has.</li><li>It is followed by a second line with the AttributeRequest's operation and the affected role.</li><li>After these two header lines, zero or more indented lines (the indent is done by the leading space before the <code>${id}</code> placeholder in the outer <code>:format()</code> instruction, the lines are connected to a multiline string by the<code>:join</code> at the end) list all IdentityRequests that are younger than this one, one per line with<ol><li>(separated by pipe symbols) ID, creation date, execution status and, after the last pipe symbol,<ol><li>all AttributeRequests (<code><span style="color:var(--ds-text,#172b4d);">provisionedProject.iiqAccountRequest.attributeRequests</span></code>) formatted as <em>operation</em>=<em>value</em> and separated by colons.</li></ol></li></ol></li><li>The last two lines contain the names of all assigned and detected roles.</li></ol><p>Here is the output:</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false">2021-03-01 0a16313c77ca17798177ed3e93d83145 usrxy Completed fullyCommitted=false null
+Add Role869
+ 0a16313d77ca178181784a2f9b045295|2021-03-19|Terminated|Add=Role008:Add=Role974:Add=Role994
+ 0a16313c79a41eb38179d645abe067e1|2021-06-04|Completed|Add=Role115
+assigned = [Role501, Role430, Role071, Role059, Role001, Role281, Role609, Role105, Role012, Role478, Role748, Role558, Role001, Role061, Role063, Role502, Role012, Role701, Role024, Role608, Role674, Role701, Role601, Role108, Role983, Role536, Role355, Role481, Role700, Role701, Role281, Role115, Role950, Role801, Role511]
+detected = [ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456, ER_123456]</pre>
+</div></div><p>As the example shows, formatting templates allow to create quite complex output with minimal effort. Of course, traversing complex object hierarchies is not a trivial task, and formatting nested objects can be demanding. However, if you work your way from the outside to the inner, you shouldn't experience serious difficulties. Let's have a look at the expression contained in the placeholder expression on line 3 of the formatting template, presenting it in a more reader friendly indented multiline format with comments for explanation (this, of course, renders it unusable since OrionQL doesn't accept whitespace or comments):</p><div class="code panel pdl conf-macro output-block" style="border-width: 1px;" data-hasbody="true" data-macro-name="code"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: true">// load all more recent IdentityRequests for target identity
+:IdentityRequest([targetId == $&quot;^.targetId&quot; &amp;&amp; created &gt; $&quot;^.created&quot;])
+:map(
+	// [IdentityRequest]
+	:format(
+		 ${id}
+		|
+		${%tF,created}
+		|
+		${executionStatus}
+		|
+		${
+			provisionedProject.iiqAccountRequest.attributeRequests
+			:map(
+				// [AttributeRequest]
+				:format(
+					${op}=${value}
+				)
+			)
+			:join(:)
+		}
+	)
+)
+:join</pre>
+</div></div><p>Dissecting the expression in this way, the chaining (<code>:map():join()</code>) and nesting (<code>:map()</code> within <code>:map()</code>) of the transformations applied to the data become more explicitly visible.</p><p><br/></p>

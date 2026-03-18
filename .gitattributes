@@ -1,0 +1,16 @@
+# Let Git detect text files and normalize to LF in the repo;
+# on checkout, use the platform’s native EOL.
+*          text=auto
+
+# Make intent explicit for common text types
+*.md       text
+*.java      text
+*.css      text
+*.html     text
+*.xhtml    text
+*.xml      text
+*.drawio   text
+
+# Binary assets — never attempt EOL normalization
+*.png      -text
+*.pdf      -text
