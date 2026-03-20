@@ -4,6 +4,8 @@
 	<Description>This is the global CerberusLogic macro library</Description>
 	<Attributes>
 		<Map>
+			<entry key="computeTimeBucket" value="Attribute( &quot;timebucket&quot; )&#xA;.when( &quot;created:format(${%yyyy-MM-dd HH:mm})&quot;, ge( &quot;created&quot;, ref( &quot;:now(-120m)&quot; ) ) )&#xA;.when( &quot;created:format(${%yyyy-MM-dd HH})&quot;, ge( &quot;created&quot;, ref( &quot;:now(-48h)&quot; ) ) )&#xA;.when( &quot;created:format(${%yyyy-MM-dd})&quot;, ge( &quot;created&quot;, ref( &quot;:now(-10d)&quot; ) ) )&#xA;.when( &quot;created:format(${%yyyy-MM})&quot;, ge( &quot;created&quot;, ref( &quot;:now(-3M)&quot; ) ) )&#xA;.when( &quot;created:format(${%yyyy})&quot; )"/>
+			<entry key="computeTimeBucket$description" value="Compute a synthetic ‘timebucket’ attribute from the object’s ‘created’ timestamp, producing a string whose precision adapts to the age of the timestamp"/>
 			<entry key="toSuccessColoredSumWithHiddenDetailsMap" value="accept(&quot;value.$toSuccessColoredSumWithHiddenDetailsMap$&quot;)"/>
 			<entry key="toSuccessColoredSumWithHiddenDetailsMap$description" value="This is a groups postprocessing level action to transform a mapping of status strings to counts into their sum, color styled by the percentage of the &apos;Success&apos; counts, with the details as popup"/>
 			<entry key="toSizeWithHiddenDetailsList" value="accept(&quot;value.$toSizeWithHiddenDetailsList$&quot;)"/>
