@@ -95,7 +95,7 @@ What you will find in the package:
     functionality and other tasks
 * A small but powerful framework with no external dependencies that provides
   the basis for these tools and many other possible applications:
-  * QueryHelper – a thin wrapper around the SailpointContext search() methods
+  * QueryHelper – a thin wrapper around the SailPointContext `search()` methods
     that simplifies programming by giving direct access to extended attributes
     and returning records as `Map<String, Object>` instead of `Object[]`
   * IndexedData and TabularData - utility classes for working with in-memory
