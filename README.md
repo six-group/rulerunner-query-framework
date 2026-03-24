@@ -132,6 +132,19 @@ To integrate the framework into your IIQ installation, proceed as follows:
 
 Consult the TODO file and the documentation in the doc directory.
 
+## Dependencies
+
+You might need to add the following libraries to your SSB build if you don’t have them yet:
+
+* in the lib directory:
+  * annotations-19.0.0.jar
+  * hamcrest-2.2.jar
+  * hamcrest-core-2.2.jar
+  * junit-4.12.jar
+  * mockito-core-3.3.3.jar
+* in the web/WEB-INF/lib directory:
+  * javax.servlet-api-4.0.1.jar
+
 ## Contributing
 
 We welcome contributions, issues, and feature requests. Feel free to submit
