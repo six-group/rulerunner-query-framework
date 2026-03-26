@@ -107,6 +107,18 @@ What you will find in the package:
     for navigating object models and transforming data
 * Extensive documentation
 
+For an initial impression of what to expect, look at the browser screenshots in
+the [`doc/showcases`](https://github.com/six-group/rulerunner-query-framework/tree/main/doc/showcases) directory and the screenshots in
+the
+[`doc/The Generic Query/Prefabricated queries`](https://github.com/six-group/rulerunner-query-framework/tree/main/doc/The%20Generic%20Query/Prefabricated%20queries)
+directory. Once you have successfully deployed, try the
+[prefabricated queries](https://github.com/six-group/rulerunner-query-framework/blob/main/doc/The%20Generic%20Query/Prefabricated%20queries/269132414.md)
+on your IIQ instance (currently, you need to compose the URLs manually by
+appending the parameter string in the *Parameters* column to the Rule Runner's
+base URL like
+`https://identitiq.localdomain.com/identityiq/rulerunner/rulerunner.jsf?` -
+adjust this according to your installation).
+
 ## Getting Started
 
 The repository is located at
@@ -130,7 +142,7 @@ To integrate the framework into your IIQ installation, proceed as follows:
   your setup and be sure you have the SystemAdministrator capability):
   [Test the installation](https://iam.localdomain.com/identityiq/rulerunner/rulerunner.jsf?rule=six_generic_query&className=Identity&filter=name+%3D%3D+%24%22%3Aenv%28username%29%22&output=user%3D%24toAugmentedName%24%0Aroles%3DassignedRoles%3Amap%28%24toAugmentedName%24%29%3Asort%3Ajoin) 
 
-Consult the TODO file and the documentation in the doc directory.
+Consult the TODO file and the documentation in the `doc` directory.
 
 ## Dependencies
 
