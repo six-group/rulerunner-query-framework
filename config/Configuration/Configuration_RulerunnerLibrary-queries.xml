@@ -44,6 +44,61 @@
 					</Rule>
 				</value>
 			</entry>
+			<entry key="search_provisioning_transactions">
+				<value>
+					<Rule language="proxy">
+						<Description>Show selected provisioning transactions</Description>
+						<Signature>
+							<Inputs>
+								<Argument name="integration" type="string">
+									<Description>Provisioning endpoint (mandatory)</Description>
+									<Prompt>Integration</Prompt>
+								</Argument>
+								<Argument name="begin" type="date">
+									<Description>Query interval start (mandatory)</Description>
+									<Prompt>Begin</Prompt>
+								</Argument>
+								<Argument name="end" type="date">
+									<Description>Query interval end (mandatory)</Description>
+									<Prompt>End</Prompt>
+								</Argument>
+								<Argument name="operation" type="string">
+									<Description>Provisioning operation (optional)</Description>
+									<Prompt>Operation</Prompt>
+								</Argument>
+								<Argument name="status" type="string">
+									<Description>Provisioning status (optional)</Description>
+									<Prompt>Status</Prompt>
+								</Argument>
+								<Argument name="source" type="string">
+									<Description>Provisioning source (optional)</Description>
+									<Prompt>Source</Prompt>
+								</Argument>
+							</Inputs>
+						</Signature>
+						<Attributes>
+							<Map>
+								<entry key="title" value="Provisioning Transactions for selection"/>
+								<entry key="authorizingCapabilities" value="-- put the optional authorizing capabilities here --"/>
+								<entry key="authorizingDynamicScopes" value="-- put the optional authorizing scopes here --"/>
+								<entry key="targetRuleName" value="six_generic_query"/>
+								<entry key="targetRuleArguments">
+									<value>
+										<Attributes>
+											<Map>
+												<entry key="title" value="Provisioning Transactions for selection"/>
+												<entry key="className" value="Expression"/>
+												<entry key="filter" value=":ProvisioningTransaction(>&#xA; integration == $&quot;:env(integration)&quot;&#xA; &amp;&amp; created >= $&quot;:env(begin)&quot;&#xA; &amp;&amp; created &lt; $&quot;:env(end)&quot;&#xA; ${:env(operation):match(.+):format(&amp;&amp; operation == $&quot;&quot;),}&#xA; ${:env(status):match(.+):format(&amp;&amp; status == $&quot;&quot;),}&#xA; ${:env(source):match(.+):format(&amp;&amp; source == $&quot;&quot;),}&#xA;)\&#xA;:sort(created desc)"/>
+												<entry key="output" value="$provisioningTransaction.columns$"/>
+											</Map>
+										</Attributes>
+									</value>
+								</entry>
+							</Map>
+						</Attributes>
+					</Rule>
+				</value>
+			</entry>
 			<entry key="show_provisioning_transaction">
 				<value>
 					<Rule language="proxy">
