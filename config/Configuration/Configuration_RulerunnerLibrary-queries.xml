@@ -50,8 +50,12 @@
 						<Description>Show selected provisioning transactions</Description>
 						<Signature>
 							<Inputs>
-								<Argument name="integration" type="string">
+								<Argument name="applicationName" type="string">
 									<Description>Provisioning endpoint (mandatory)</Description>
+									<Prompt>Application</Prompt>
+								</Argument>
+								<Argument name="integration" type="string">
+									<Description>Integration endpoint (optional)</Description>
 									<Prompt>Integration</Prompt>
 								</Argument>
 								<Argument name="begin" type="date">
@@ -88,7 +92,7 @@
 											<Map>
 												<entry key="title" value="Provisioning Transactions for selection"/>
 												<entry key="className" value="Expression"/>
-												<entry key="filter" value=":ProvisioningTransaction(>&#xA; integration == $&quot;:env(integration)&quot;&#xA; &amp;&amp; created >= $&quot;:env(begin)&quot;&#xA; &amp;&amp; created &lt; $&quot;:env(end)&quot;&#xA; ${:env(operation):match(.+):format(&amp;&amp; operation == $&quot;&quot;),}&#xA; ${:env(status):match(.+):format(&amp;&amp; status == $&quot;&quot;),}&#xA; ${:env(source):match(.+):format(&amp;&amp; source == $&quot;&quot;),}&#xA;)\&#xA;:sort(created desc)"/>
+												<entry key="filter" value=":ProvisioningTransaction(>&#xA; applicationName == $&quot;:env(applicationName)&quot;&#xA; ${:env(integration):match(.+):format(&amp;&amp; integration == $&quot;&quot;),}&#xA; &amp;&amp; created >= $&quot;:env(begin)&quot;&#xA; &amp;&amp; created &lt; $&quot;:env(end)&quot;&#xA; ${:env(operation):match(.+):format(&amp;&amp; operation == $&quot;&quot;),}&#xA; ${:env(status):match(.+):format(&amp;&amp; status == $&quot;&quot;),}&#xA; ${:env(source):match(.+):format(&amp;&amp; source == $&quot;&quot;),}&#xA;)\&#xA;:sort(created desc)"/>
 												<entry key="output" value="$provisioningTransaction.columns$"/>
 											</Map>
 										</Attributes>
