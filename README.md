@@ -142,7 +142,7 @@ To integrate the framework into your IIQ installation, proceed as follows:
   your setup and be sure you have the SystemAdministrator capability):
   [Test the installation](https://iam.localdomain.com/identityiq/rulerunner/rulerunner.jsf?rule=six_generic_query&className=Identity&filter=name+%3D%3D+%24%22%3Aenv%28username%29%22&output=user%3D%24toAugmentedName%24%0Aroles%3DassignedRoles%3Amap%28%24toAugmentedName%24%29%3Asort%3Ajoin) 
 
-Consult the TODO file and the documentation in the `doc` directory.
+Consult the [TODO](https://github.com/six-group/rulerunner-query-framework/blob/main/TODO.md) file and the documentation in the [`doc`](https://github.com/six-group/rulerunner-query-framework/tree/main/doc) directory.
 
 ## Dependencies
 
